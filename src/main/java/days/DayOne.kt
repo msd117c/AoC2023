@@ -1,10 +1,12 @@
 package days
 
+import utils.InputReader.readInput
+
 object DayOne {
 
     // Puzzle 1-1
     fun puzzle1() {
-        readInputLines { lines ->
+        readInput("dayOneInput") { lines ->
             val result = lines.map(::getLineDigitsPuzzle1).sum()
             println("Day 1 puzzle 1 result is: $result")
         }
@@ -23,7 +25,7 @@ object DayOne {
 
     // Puzzle 1-2
     fun puzzle2() {
-        readInputLines { lines ->
+        readInput("dayOneInput") { lines ->
             val result = lines.map(::getLineDigitsPuzzle2).sum()
             println("Day 1 puzzle 2 result is: $result")
         }
@@ -91,12 +93,4 @@ object DayOne {
     }
 
     private data class Candidate(val position: Int, val digit: String)
-
-    // Common code
-    private fun readInputLines(block: (Sequence<String>) -> Unit) {
-        val input = javaClass.classLoader.getResource("dayOneInput")?.openStream()
-            ?: throw IllegalStateException("No input found!")
-
-        input.bufferedReader().useLines { lines -> block(lines) }
-    }
 }
