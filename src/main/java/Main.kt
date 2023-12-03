@@ -1,4 +1,5 @@
 import days.DayOne
+import days.DayThree
 import days.DayTwo
 
 object Main {
@@ -12,5 +13,9 @@ object Main {
         println("----- Day 2 -----")
         DayTwo.puzzle1()
         DayTwo.puzzle2()
+        println("-----------------")
+        println("----- Day 3 -----")
+        DayThree.puzzle1()
+        DayThree.puzzle2()
     }
 }
