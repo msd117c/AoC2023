@@ -13,16 +13,8 @@ object DayThree {
             val input = lines.toList()
 
             val validParts = input.mapIndexed { index, line ->
-                val previousLine = if (index - 1 >= 0) {
-                    input[index - 1]
-                } else {
-                    null
-                }
-                val nextLine = if (index + 1 < input.size) {
-                    input[index + 1]
-                } else {
-                    null
-                }
+                val previousLine = if (index - 1 >= 0) input[index - 1] else null
+                val nextLine = if (index + 1 < input.size) input[index + 1] else null
 
                 getParts(line, previousLine, nextLine)
             }.flatten()
@@ -65,16 +57,8 @@ object DayThree {
             val input = lines.toList()
 
             val validGears = input.mapIndexed { index, line ->
-                val previousLine = if (index - 1 >= 0) {
-                    input[index - 1]
-                } else {
-                    null
-                }
-                val nextLine = if (index + 1 < input.size) {
-                    input[index + 1]
-                } else {
-                    null
-                }
+                val previousLine = if (index - 1 >= 0) input[index - 1] else null
+                val nextLine = if (index + 1 < input.size) input[index + 1] else null
 
                 getGears(line, previousLine, nextLine)
             }.flatten()
