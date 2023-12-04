@@ -5,6 +5,7 @@ import utils.InputReader.readInput
 object DayFour {
 
     private const val LINE_PATTERN = "^Card ?\\s+\\d+: (.*)"
+
     fun puzzle1() {
         readInput("dayFourInput") { lines ->
             val cards = lines.toList().map(::getCardNumbers)
