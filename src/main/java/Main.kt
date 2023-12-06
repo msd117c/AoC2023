@@ -23,5 +23,9 @@ object Main {
         println("----- Day 5 -----")
         DayFive.puzzle1()
         DayFive.puzzle2()
+        println("-----------------")
+        println("----- Day 6 -----")
+        Day06.puzzle1()
+        Day06.puzzle2()
     }
 }
