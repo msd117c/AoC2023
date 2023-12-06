@@ -4,10 +4,12 @@ This repository contains the different puzzles solved from the [Advent of Code 2
 
 ### Puzzles
 
-- [Day 1 puzzle](https://adventofcode.com/2023/day/1) -> [Solution](src/main/java/days/DayOne.kt)
-- [Day 2 puzzle](https://adventofcode.com/2023/day/2) -> [Solution](src/main/java/days/DayTwo.kt)
-- [Day 3 puzzle](https://adventofcode.com/2023/day/3) -> [Solution](src/main/java/days/DayThree.kt)
-- [Day 4 puzzle](https://adventofcode.com/2023/day/4) -> [Solution](src/main/java/days/DayFour.kt)
+- [Day 1 puzzle](https://adventofcode.com/2023/day/1) -> [Solution](src/main/java/days/Day01.kt)
+- [Day 2 puzzle](https://adventofcode.com/2023/day/2) -> [Solution](src/main/java/days/Day02.kt)
+- [Day 3 puzzle](https://adventofcode.com/2023/day/3) -> [Solution](src/main/java/days/Day03.kt)
+- [Day 4 puzzle](https://adventofcode.com/2023/day/4) -> [Solution](src/main/java/days/Day04.kt)
+- [Day 5 puzzle](https://adventofcode.com/2023/day/5) -> [Solution](src/main/java/days/Day05.kt)
+- [Day 6 puzzle](https://adventofcode.com/2023/day/6) -> [Solution](src/main/java/days/Day06.kt)
 
 ### Results
 

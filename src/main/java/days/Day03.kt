@@ -2,14 +2,14 @@ package days
 
 import utils.InputReader.readInput
 
-object DayThree {
+object Day03 {
 
     private const val NUMBER_PATTERN = "(\\d+)"
     private const val SYMBOL_PATTERN = "(?!(\\d+))(?!(\\.))(.)"
     private const val GEAR_PATTERN = "(?!(\\d+))(?!(\\.))(\\*)"
 
     fun puzzle1() {
-        readInput("dayThreeInput") { lines ->
+        readInput("day03Input") { lines ->
             val input = lines.toList()
 
             val validParts = input.mapIndexed { index, line ->
@@ -53,7 +53,7 @@ object DayThree {
     }
 
     fun puzzle2() {
-        readInput("dayThreeInput") { lines ->
+        readInput("day03Input") { lines ->
             val input = lines.toList()
 
             val validGears = input.mapIndexed { index, line ->

@@ -1,9 +1,9 @@
 package days
 
-import days.DayFive.MapType.*
+import days.Day05.MapType.*
 import utils.InputReader.readInput
 
-object DayFive {
+object Day05 {
 
     private const val SEEDS_PATTERN = "^seeds: (.*)"
     private const val SEED_TO_SOIL_PATTERN = "seed-to-soil map:"
@@ -25,7 +25,7 @@ object DayFive {
     }
 
     fun puzzle1() {
-        readInput("dayFiveInput") { lines ->
+        readInput("day05Input") { lines ->
             var seedsLine = ""
             val groups = hashMapOf<MapType, List<String>>()
             var currentGroup: MapType? = null
@@ -102,7 +102,7 @@ object DayFive {
         val groups = hashMapOf<Int, List<String>>()
         var seedsLine = ""
 
-        readInput("dayFiveInput") { lines ->
+        readInput("day05Input") { lines ->
             var currentGroup = -1
 
             lines.toList().forEach { line ->

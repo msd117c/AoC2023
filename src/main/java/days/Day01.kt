@@ -2,11 +2,11 @@ package days
 
 import utils.InputReader.readInput
 
-object DayOne {
+object Day01 {
 
     // Puzzle 1-1
     fun puzzle1() {
-        readInput("dayOneInput") { lines ->
+        readInput("day01Input") { lines ->
             val result = lines.map(::getLineDigitsPuzzle1).sum()
             println("Day 1 puzzle 1 result is: $result")
         }
@@ -25,7 +25,7 @@ object DayOne {
 
     // Puzzle 1-2
     fun puzzle2() {
-        readInput("dayOneInput") { lines ->
+        readInput("day01Input") { lines ->
             val result = lines.map(::getLineDigitsPuzzle2).sum()
             println("Day 1 puzzle 2 result is: $result")
         }

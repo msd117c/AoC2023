@@ -2,7 +2,7 @@ package days
 
 import utils.InputReader.readInput
 
-object DayTwo {
+object Day02 {
 
     private const val GAME_REGEX = "Game (\\d+):.*"
     private const val CUBE_QUANTITY_PATTERN = "(\\d+)"
@@ -14,7 +14,7 @@ object DayTwo {
     }
 
     fun puzzle1() {
-        readInput("dayTwoInput") { lines ->
+        readInput("day02Input") { lines ->
             val games = lines.toList().map(::parseGame)
             val total = filterPossibleGames(games).sumOf { game -> game.id }
 
@@ -29,7 +29,7 @@ object DayTwo {
     }
 
     fun puzzle2() {
-        readInput("dayTwoInput") { lines ->
+        readInput("day02Input") { lines ->
             val games = lines.toList().map(::parseGame)
             val minAmountPerGame = games.map(::getMinimumAmountPerCube)
             val total = minAmountPerGame.sumOf { minAmount ->

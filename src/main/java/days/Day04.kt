@@ -2,12 +2,12 @@ package days
 
 import utils.InputReader.readInput
 
-object DayFour {
+object Day04 {
 
     private const val LINE_PATTERN = "^Card ?\\s+\\d+: (.*)"
 
     fun puzzle1() {
-        readInput("dayFourInput") { lines ->
+        readInput("day04Input") { lines ->
             val cards = lines.toList().map(::getCardNumbers)
             val pointsList = cards.map(::getPoints)
 
@@ -29,7 +29,7 @@ object DayFour {
     }
 
     fun puzzle2() {
-        readInput("dayFourInput") { lines ->
+        readInput("day04Input") { lines ->
             var cards = lines.toList().map(::getCardNumbers)
 
             cards.indices.forEach { index ->
