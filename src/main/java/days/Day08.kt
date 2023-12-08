@@ -20,7 +20,7 @@ object Day08 {
             val start = nodes.first { it.id == startId }
             val end = nodes.first { it.id == endId }
 
-            val distances = dijkstra(nodes, start, listOf(end), instructions)
+            val distances = calculateMinDistance(nodes, start, listOf(end), instructions)
             println("Day 8 puzzle 1 result is: $distances")
         }
     }
@@ -38,7 +38,7 @@ object Day08 {
             val endNodes = nodes.filter { node -> node.id.endsWith("Z") }
 
             val distances = startNodes.map { startNode ->
-                dijkstra(nodes, startNode, endNodes, instructions)
+                calculateMinDistance(nodes, startNode, endNodes, instructions)
             }
             val min = distances.reduce { total, next -> lcm(total, next) }
             println("Day 8 puzzle 2 result is: $min")
@@ -53,7 +53,7 @@ object Day08 {
         return if (b == 0L) a else gcd(b, a % b)
     }
 
-    private fun dijkstra(
+    private fun calculateMinDistance(
         graph: List<Node>,
         start: Node,
         endNodes: List<Node>,
