@@ -5,6 +5,7 @@ import utils.InputReader.readInput
 object Day08 {
 
     private const val NODE_PATTERN = "^(.*) = \\((.*), (.*)\\)"
+
     fun puzzle1() {
         readInput("day08Input") { lines ->
             val startId = "AAA"
@@ -16,28 +17,74 @@ object Day08 {
                 input.indexOfFirst { line -> line.isEmpty() },
                 input.size - 1
             ).map(::parseNode)
+            val start = nodes.first { it.id == startId }
+            val end = nodes.first { it.id == endId }
 
-            val steps = navigate(instructions, nodes, startId, endId)
-            println("Day 8 puzzle 1 result is: $steps")
+            val distances = dijkstra(nodes, start, listOf(end), instructions)
+            println("Day 8 puzzle 1 result is: $distances")
         }
     }
 
-    private fun navigate(instructions: CharArray, nodes: List<Node>, startId: String, endId: String): Int {
-        val queue = arrayListOf(nodes.first { it.id == startId })
+    fun puzzle2() {
+        readInput("day08Input") { lines ->
+            val input = lines.toList()
 
-        while (queue.all { it.id != endId }) {
+            val instructions = input.first().toCharArray()
+            val nodes = input.drop(1).subList(
+                input.indexOfFirst { line -> line.isEmpty() },
+                input.size - 1
+            ).map(::parseNode)
+            val startNodes = nodes.filter { node -> node.id.endsWith("A") }
+            val endNodes = nodes.filter { node -> node.id.endsWith("Z") }
+
+            val distances = startNodes.map { startNode ->
+                dijkstra(nodes, startNode, endNodes, instructions)
+            }
+            val min = distances.reduce { total, next -> lcm(total, next) }
+            println("Day 8 puzzle 2 result is: $min")
+        }
+    }
+
+    private fun lcm(a: Long, b: Long): Long {
+        return a / gcd(a, b) * b
+    }
+
+    private fun gcd(a: Long, b: Long): Long {
+        return if (b == 0L) a else gcd(b, a % b)
+    }
+
+    private fun dijkstra(
+        graph: List<Node>,
+        start: Node,
+        endNodes: List<Node>,
+        instructions: CharArray
+    ): Long {
+        var finished = false
+        val queue = mutableListOf(start)
+
+        var steps = 0L
+        while (!endNodes.contains(queue.last()) || !finished) {
             instructions.forEach { instruction ->
-                val nextNode = when (instruction) {
-                    'R' -> queue.last().right
-                    'L' -> queue.last().left
-                    else -> throw IllegalArgumentException("Not valid instruction!")
+                val current = queue.removeAt(0)
+
+                val neighbor = when (instruction) {
+                    'R' -> graph.first { it.id == current.right }
+                    'L' -> graph.first { it.id == current.left }
+                    else -> throw IllegalArgumentException("Bad instruction")
                 }
-                queue.add(nodes.first { it.id == nextNode })
-                if (queue.any { it.id == endId }) return@forEach
+
+                queue.add(neighbor)
+
+                steps++
+
+                if (endNodes.contains(queue.last())) {
+                    finished = true
+                    return@forEach
+                }
             }
         }
 
-        return queue.size - 1
+        return steps
     }
 
     private fun parseNode(line: String): Node {
