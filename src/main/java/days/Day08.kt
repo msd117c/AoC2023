@@ -45,13 +45,9 @@ object Day08 {
         }
     }
 
-    private fun lcm(a: Long, b: Long): Long {
-        return a / gcd(a, b) * b
-    }
+    private fun lcm(a: Long, b: Long) = a / gcd(a, b) * b
 
-    private fun gcd(a: Long, b: Long): Long {
-        return if (b == 0L) a else gcd(b, a % b)
-    }
+    private fun gcd(a: Long, b: Long): Long = if (b == 0L) a else gcd(b, a % b)
 
     private fun calculateMinDistance(
         graph: List<Node>,
