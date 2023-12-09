@@ -29,5 +29,8 @@ object Main {
         // Review
         Day08.puzzle1()
         Day08.puzzle2()
+
+        Day09.puzzle1()
+        Day09.puzzle2()
     }
 }
