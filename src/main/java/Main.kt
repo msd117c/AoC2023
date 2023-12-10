@@ -32,5 +32,8 @@ object Main {
 
         Day09.puzzle1()
         Day09.puzzle2()
+
+        Day10.puzzle1()
+        Day10.puzzle2()
     }
 }
