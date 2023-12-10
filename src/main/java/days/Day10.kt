@@ -86,19 +86,13 @@ object Day10 {
 
         val y = coordinates.y
         val x = coordinates.x
-        val isEnclosed = listOf(
-            Coordinates(y + 1, x),
-            Coordinates(y - 1, x),
-            Coordinates(y, x + 1),
-            Coordinates(y, x - 1),
-        ).filter { neighborCoordinates ->
-            neighborCoordinates.y >= 0 && neighborCoordinates.x >= 0 &&
-                    neighborCoordinates.y < map.size && neighborCoordinates.x < map.first().size
-        }.all { neighborCoordinates ->
-            mainLoop.contains(neighborCoordinates)
-        }
 
-        return !isPartOfMainLoop && isEnclosed
+        val isEnclosedHorizontally = (0 until x + 1).any { mainLoop.contains(Coordinates(y, it)) } &&
+                (x + 1 until map.first().size).any { mainLoop.contains(Coordinates(y, it)) }
+        val isEnclosedVertically = (0 until y + 1).any { mainLoop.contains(Coordinates(it, x)) } &&
+                (y + 1 until map.size).any { mainLoop.contains(Coordinates(it, x)) }
+
+        return !isPartOfMainLoop && isEnclosedHorizontally && isEnclosedVertically
     }
 
     private fun drawMap(map: Array<CharArray>, mainLoop: List<Coordinates>, enclosedTiles: List<Coordinates>) {
