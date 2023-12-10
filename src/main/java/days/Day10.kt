@@ -41,14 +41,78 @@ object Day10 {
     fun puzzle2() {
         readInput("day10Input") { lines ->
             val map = parseMap(lines.toList())
-            val graph = parseGraph(map)
-            val start = getStartPosition(map)
+            val newMap = zoomMap(map)
+            val graph = parseGraph(newMap)
+            val start = getStartPosition(newMap)
 
             val mainLoop = findMainLoop(graph, start)
-            val enclosedTiles = findEnclosedTiles(mainLoop, map)
-            drawMap(map, mainLoop, enclosedTiles)
-            //println("Day 10 puzzle 2 result is: ${distances.values.max()}")
+            val nonMainLoop = findNonMainLoop(graph, mainLoop)
+            val outerLoops = findOuterLoops(nonMainLoop, newMap).flatten()
+            val enclosedTiles = nonMainLoop.minus(outerLoops.toSet())
+            val reducedEnclosedTiles = enclosedTiles
+                .filterNot { coordinates -> coordinates.x % 2 != 0 }
+                .filterNot { coordinates -> coordinates.y % 2 != 0 }
+
+            //drawMap(newMap, mainLoop, outerLoops, reducedEnclosedTiles)
+            println("Day 10 puzzle 2 result is: ${reducedEnclosedTiles.size}")
         }
+    }
+
+    private fun zoomMap(map: Array<CharArray>): Array<CharArray> {
+        val newMap = mutableListOf<CharArray>()
+
+        map.forEachIndexed { y, line ->
+            val newFirstLine = line.mapIndexed { x, symbol ->
+                when (symbol) {
+                    '|' -> "|."
+                    '-' -> "--"
+                    'L' -> "L-"
+                    'J' -> "J."
+                    '7' -> "7."
+                    'F' -> "F-"
+                    'S' -> {
+                        when (line[x + 1]) {
+                            '-' -> "S-"
+                            'J' -> "S-"
+                            '7' -> "S-"
+                            else -> "S."
+                        }
+                    }
+
+                    '.' -> ".."
+                    else -> throw IllegalArgumentException("Not valid tile")
+                }
+            }.joinToString("")
+
+            val newSecond = newFirstLine.mapIndexed { x, symbol ->
+                when (symbol) {
+                    '|' -> '|'
+                    '-' -> '.'
+                    'L' -> '.'
+                    'J' -> '.'
+                    '7' -> '|'
+                    'F' -> '|'
+                    'S' -> {
+                        when (map[y + 1][x.div(2)]) {
+                            '|' -> '|'
+                            'J' -> '|'
+                            'L' -> '|'
+                            else -> '.'
+                        }
+                    }
+
+                    '.' -> '.'
+                    else -> throw IllegalArgumentException("Not valid tile")
+                }
+            }
+
+            newMap.add(newFirstLine.toCharArray())
+            newMap.add(newSecond.toCharArray())
+        }
+
+
+
+        return newMap.toTypedArray()
     }
 
     private fun findMainLoop(graph: Map<Coordinates, List<Path>>, start: Coordinates): List<Coordinates> {
@@ -68,45 +132,78 @@ object Day10 {
         return mainLoop
     }
 
-    private fun findEnclosedTiles(mainLoop: List<Coordinates>, map: Array<CharArray>): List<Coordinates> {
-        return map.flatMapIndexed { y, line ->
-            line.mapIndexed { x, _ ->
-                val coordinates = Coordinates(y, x)
-                if (isEnclosed(coordinates, mainLoop, map)) {
-                    coordinates
-                } else {
-                    null
-                }
-            }
-        }.filterNotNull()
+    private fun findNonMainLoop(graph: Map<Coordinates, List<Path>>, mainLoop: List<Coordinates>): List<Coordinates> {
+        return graph.keys.toList().minus(mainLoop.toSet())
     }
 
-    private fun isEnclosed(coordinates: Coordinates, mainLoop: List<Coordinates>, map: Array<CharArray>): Boolean {
-        val isPartOfMainLoop = mainLoop.contains(coordinates)
+    private fun findOuterLoops(nonMainLoop: List<Coordinates>, map: Array<CharArray>): List<List<Coordinates>> {
+        val edgeCoordinates = nonMainLoop.filter { coordinates ->
+            coordinates.x == 0 || coordinates.y == 0 ||
+                    coordinates.x == map.first().size - 1 || coordinates.y == map.size - 1
+        }.toMutableList()
+        val outerLoops = mutableListOf(listOf(edgeCoordinates.first()))
 
+        while (edgeCoordinates.isNotEmpty()) {
+            outerLoops.add(discoverOuterLoops(nonMainLoop, edgeCoordinates.removeAt(0)))
+            edgeCoordinates.removeAll { coordinates -> outerLoops.any { it.contains(coordinates) } }
+        }
+
+        return outerLoops
+    }
+
+    private fun findNeighbors(coordinates: Coordinates, availableCoordinates: List<Coordinates>): List<Coordinates> {
         val y = coordinates.y
         val x = coordinates.x
 
-        val isEnclosedHorizontally = (0 until x + 1).any { mainLoop.contains(Coordinates(y, it)) } &&
-                (x + 1 until map.first().size).any { mainLoop.contains(Coordinates(y, it)) }
-        val isEnclosedVertically = (0 until y + 1).any { mainLoop.contains(Coordinates(it, x)) } &&
-                (y + 1 until map.size).any { mainLoop.contains(Coordinates(it, x)) }
-
-        return !isPartOfMainLoop && isEnclosedHorizontally && isEnclosedVertically
+        return listOf(
+            Coordinates(y + 1, x),
+            Coordinates(y - 1, x),
+            Coordinates(y, x + 1),
+            Coordinates(y, x - 1),
+        ).filter { neighborCoordinates ->
+            neighborCoordinates.x >= 0 && neighborCoordinates.y >= 0
+        }.filter { neighborCoordinates ->
+            availableCoordinates.contains(neighborCoordinates)
+        }
     }
 
-    private fun drawMap(map: Array<CharArray>, mainLoop: List<Coordinates>, enclosedTiles: List<Coordinates>) {
+    private fun discoverOuterLoops(nonMainLoop: List<Coordinates>, start: Coordinates): List<Coordinates> {
+        val coordinates = mutableListOf(start)
+        val queue = mutableListOf(start)
+
+        while (queue.isNotEmpty()) {
+            val current = queue.removeAt(0)
+
+            val neighbors = findNeighbors(current, nonMainLoop)
+            for (neighbor in neighbors) {
+                if (!coordinates.contains(neighbor)) {
+                    coordinates.add(neighbor)
+                    queue.add(neighbor)
+                }
+            }
+        }
+
+        return coordinates
+    }
+
+    private fun drawMap(
+        map: Array<CharArray>,
+        mainLoop: List<Coordinates>,
+        nonMainLoop: List<Coordinates>,
+        enclosedTiles: List<Coordinates>,
+    ) {
         map.forEachIndexed { y, line ->
             val updatedLine = line.mapIndexed { x, symbol ->
                 val coordinates = Coordinates(y, x)
 
                 when {
                     //mainLoop.contains(coordinates) -> 'X'
+                    nonMainLoop.contains(coordinates) -> '0'
                     enclosedTiles.contains(coordinates) -> 'I'
                     else -> symbol
                 }
             }
-            println(updatedLine)
+            println(updatedLine.toString())
         }
     }
 
