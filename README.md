@@ -13,6 +13,8 @@ This repository contains the different puzzles solved from the [Advent of Code 2
 - [Day 7 puzzle](https://adventofcode.com/2023/day/7) -> [Solution](src/main/java/days/Day07.kt)
 - [Day 8 puzzle](https://adventofcode.com/2023/day/8) -> [Solution](src/main/java/days/Day08.kt)
 - [Day 9 puzzle](https://adventofcode.com/2023/day/9) -> [Solution](src/main/java/days/Day09.kt)
+- [Day 10 puzzle](https://adventofcode.com/2023/day/10) -> [Solution](src/main/java/days/Day10.kt)
+- [Day 11 puzzle](https://adventofcode.com/2023/day/11) -> [Solution](src/main/java/days/Day11.kt)
 
 ### Results
 
