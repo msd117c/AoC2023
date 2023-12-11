@@ -35,5 +35,8 @@ object Main {
 
         Day10.puzzle1()
         Day10.puzzle2()
+
+        Day11.puzzle1()
+        Day11.puzzle2()
     }
 }

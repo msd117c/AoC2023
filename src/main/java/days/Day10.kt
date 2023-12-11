@@ -53,7 +53,6 @@ object Day10 {
                 .filterNot { coordinates -> coordinates.x % 2 != 0 }
                 .filterNot { coordinates -> coordinates.y % 2 != 0 }
 
-            //drawMap(newMap, mainLoop, outerLoops, reducedEnclosedTiles)
             println("Day 10 puzzle 2 result is: ${reducedEnclosedTiles.size}")
         }
     }
@@ -184,27 +183,6 @@ object Day10 {
         }
 
         return coordinates
-    }
-
-    private fun drawMap(
-        map: Array<CharArray>,
-        mainLoop: List<Coordinates>,
-        nonMainLoop: List<Coordinates>,
-        enclosedTiles: List<Coordinates>,
-    ) {
-        map.forEachIndexed { y, line ->
-            val updatedLine = line.mapIndexed { x, symbol ->
-                val coordinates = Coordinates(y, x)
-
-                when {
-                    //mainLoop.contains(coordinates) -> 'X'
-                    nonMainLoop.contains(coordinates) -> '0'
-                    enclosedTiles.contains(coordinates) -> 'I'
-                    else -> symbol
-                }
-            }
-            println(updatedLine.toString())
-        }
     }
 
     private fun parseMap(lines: List<String>): Array<CharArray> {
