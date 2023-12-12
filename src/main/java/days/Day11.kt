@@ -45,7 +45,7 @@ object Day11 {
                     expansionFactor = 1000000
                 )
             }
-            println("Day 11 puzzle 1 result is: $distances")
+            println("Day 11 puzzle 2 result is: $distances")
         }
     }
 

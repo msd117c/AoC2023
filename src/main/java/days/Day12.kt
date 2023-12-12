@@ -1,18 +1,34 @@
 package days
 
 import utils.InputReader.readInput
-import java.lang.IllegalArgumentException
+import java.util.*
 
 object Day12 {
 
     private const val PATTERN = "^(.*) (.*)"
-    private const val VALID_PARTS_PATTERN = "(#+)"
-    private const val UNKNOWN_PATTERN = "(\\?+)"
+    private const val BROKEN_PATTERN = "(\\.+)"
+    private const val LEADING_BROKEN_PATTERN = "^(\\.+)"
+    private const val TRAILING_BROKEN_PATTERN = "(\\.+)\$"
 
     fun puzzle1() {
         readInput("day12Input") { lines ->
             val records = lines.toList().map(::parseRecord)
-            val brokenParts = records.map(::setBrokenParts)
+
+            // OK
+            val directRecords = records.filter(::step0CheckAgainstIdealRecord)
+
+            val nonDirectRecords = records.filterNot(::step0CheckAgainstIdealRecord)
+            val collapsedRecords = nonDirectRecords.map(::step1CollapseRecord)
+            collapsedRecords.forEach {
+                println("${it.value} ${it.ranges.joinToString(",")}")
+            }
+            val cleanedRecords = collapsedRecords.map(::step2ReplaceObviousValues).filterNot { it.value.contains("?") }
+
+            val nonCleanedRecords = collapsedRecords.map(::step2ReplaceObviousValues).filter { it.value.contains("?") }
+            val possibleCombinations = nonCleanedRecords.map(::numberOfCombinations).sum()
+
+            val result = directRecords.size + cleanedRecords.size + possibleCombinations
+            println("Day 12 puzzle 1 result is: $result")
         }
     }
 
@@ -24,120 +40,100 @@ object Day12 {
         return Record(value, ranges)
     }
 
-    private fun getNumberOfCombinations(record: Record): Int {
-        // ???.### 1,1,3 -> 1
-        // #.#.### 1,1,3 -> 1
-        // check missing ranges
-        val unknownPositions = record.value.indices.filter { record.value[it] == '?' }
-        val knownPositions = record.value.indices.filter { record.value[it] == '#' }
-        val brokenPositionsMissing =
-            (record.value.length - record.ranges.sum()) - record.value.indices.filter { record.value[it] == '.' }.size
-        val nonBrokenPositionsMissing = record.ranges.sum() - knownPositions.size
-
-        return 0
-    }
-
-    private fun setBrokenParts(record: Record): Record {
-        val ranges = mutableListOf<IntRange>()
-        // REVIEW
+    private fun step0CheckAgainstIdealRecord(record: Record): Boolean {
+        var idealRecordValue = ""
         record.ranges.forEachIndexed { index, amount ->
-            val start = if (index == 0) {
-                0
-            } else {
-                ranges[index - 1].last + 1
-            }
-
-            val end = if (index == record.ranges.size - 1) {
-                record.value.length
-            } else {
-                start + amount + 1
-            }
-
-            ranges.add(start until end)
+            idealRecordValue += "#".repeat(amount) + ".".takeIf { index < record.ranges.size - 1 }.orEmpty()
         }
 
-        val valuePairs = replaceUniquePositions(ranges, record)
-        val fixedValue = predictLastEdge(valuePairs)
-        val fixedValue2 = predictFirstEdge(valuePairs)
-        val fixedValue3 = replaceUniquePositions(fixedValue)
+        val valueToCompare = record.value
+            .replace(Regex(LEADING_BROKEN_PATTERN), "")
+            .replace(Regex(TRAILING_BROKEN_PATTERN), "")
 
-        return record
+        return idealRecordValue.length == valueToCompare.length
     }
 
-    private fun replaceUniquePositions(input: List<IntRange>, record: Record): List<Pair<String, Int>> {
-        return input.mapIndexed { index, range ->
-            val value = record.value.substring(range)
-            val amount = record.ranges[index]
+    private fun step1CollapseRecord(record: Record): Record {
+        val newValue = record.value.replace(Regex(BROKEN_PATTERN), ".")
 
-            val fixedValue = when (amount) {
-                value.count { it == '#' } -> value.replace('?', '.')
-                value.count { it == '?' } -> value.replace('?', '#')
-                else -> value
-            }
-
-            fixedValue to amount
-        }
+        return record.copy(value = newValue)
     }
 
-    private fun predictLastEdge(input: List<Pair<String, Int>>): List<Pair<String, Int>> {
-        return input.mapIndexed { index, (value, amount) ->
-            val nextSymbol = if (index == input.size - 1) {
-                null
-            } else {
-                input[index + 1].first.first()
-            }
+    private fun step2ReplaceObviousValues(record: Record): Record {
+        val newValues = record.value.split(".").filter { it.isNotEmpty() }
 
-            val lastSymbol = value.last()
-
-            val fixedLastSymbol = if (lastSymbol == '?') {
-                if (nextSymbol == '#') {
-                    '.'
+        // Fix this
+        return if (newValues.size > record.ranges.size) {
+            record
+        } else {
+            val newValue = newValues.mapIndexed { index, value ->
+                if (value.length == record.ranges[index]) {
+                    value.replace("?", "#")
                 } else {
-                    lastSymbol
+                    value
                 }
-            } else {
-                lastSymbol
-            }
-            val lastIndex = value.length - 1
+            }.joinToString(".")
 
-            value.mapIndexed { index, c -> if (index == lastIndex) fixedLastSymbol else c }.joinToString("") to amount
+            record.copy(value = newValue)
         }
     }
 
-    private fun predictFirstEdge(input: List<Pair<String, Int>>): List<Pair<String, Int>> {
-        return input.mapIndexed { index, (value, amount) ->
-            val previousSymbol = if (index == 0) {
-                null
-            } else {
-                input[index - 1].first.last()
-            }
+    private fun numberOfCombinations(record: Record): Int {
+        val unknownIndices = record.value.indices.filter { record.value[it] == '?' }
+        val missingParts = record.ranges.sum() - record.value.count { it == '#' }
+        val missingDots = unknownIndices.size - missingParts
 
-            val firstSymbol = value.first()
+        val partsInput = (0 until missingParts).map { '#' }
+        val dotsInput = (0 until missingDots).map { '.' }
+        val input = partsInput + dotsInput
 
-            val fixedFirstSymbol = if (firstSymbol == '?') {
-                if (previousSymbol == '#') {
-                    '.'
+        val possibleCombinations = permutations(input).map { it.joinToString("") }.distinct()
+
+        val combinations = possibleCombinations.mapNotNull { combination ->
+            val newValue = record.value.mapIndexed { index, c ->
+                if (unknownIndices.contains(index)) {
+                    combination[unknownIndices.indexOf(index)]
                 } else {
-                    firstSymbol
+                    c
                 }
-            } else {
-                firstSymbol
-            }
+            }.joinToString("")
 
-            value.replaceFirst(firstSymbol, fixedFirstSymbol) to amount
+            val newRecord = record.copy(value = newValue)
+            val isValid = isValidCombination(record.copy(value = newValue))
+
+            if (isValid) {
+                newRecord
+            } else {
+                null
+            }
+        }.distinct()
+
+        return combinations.size
+    }
+
+    private fun permutations(input: List<Char>): List<CharArray> {
+        val solutions = mutableListOf<CharArray>()
+        permutationsRecursive(input, 0, solutions)
+        return solutions
+    }
+
+
+    private fun permutationsRecursive(input: List<Char>, index: Int, answers: MutableList<CharArray>) {
+        if (index == input.lastIndex) answers.add(input.toCharArray())
+        for (i in index..input.lastIndex) {
+            Collections.swap(input, index, i)
+            permutationsRecursive(input, index + 1, answers)
+            Collections.swap(input, i, index)
         }
     }
 
-    private fun replaceUniquePositions(input: List<Pair<String, Int>>): List<Pair<String, Int>> {
-        return input.map { (value, amount) ->
-            val fixedValue = if (value.count { it == '?' } + value.count { it == '#' } == amount) {
-                value.replace('?', '#')
-            } else {
-                value
-            }
+    private fun isValidCombination(record: Record): Boolean {
+        val groups = record.value.split(".").filter { it.isNotEmpty() }
+        val amounts = record.ranges
 
-            fixedValue to amount
-        }
+        return groups.mapIndexed { index, value ->
+            index < amounts.size && value.length == amounts[index]
+        }.all { it }
     }
 
     private data class Record(val value: String, val ranges: List<Int>)
