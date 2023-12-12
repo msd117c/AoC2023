@@ -14,14 +14,15 @@ object Day12 {
         readInput("day12Input") { lines ->
             val records = lines.toList().map(::parseRecord)
 
-            // OK
-            val directRecords = records.filter(::step0CheckAgainstIdealRecord)
+            val firstGapRecords = records.map(::step3FillFirstGaps)
+            val lastGapRecords = firstGapRecords.map(::step3FillLastGaps)
 
-            val nonDirectRecords = records.filterNot(::step0CheckAgainstIdealRecord)
+            // OK
+            val directRecords = lastGapRecords.filter(::step0CheckAgainstIdealRecord)
+
+            val nonDirectRecords = lastGapRecords.filterNot(::step0CheckAgainstIdealRecord)
             val collapsedRecords = nonDirectRecords.map(::step1CollapseRecord)
-            collapsedRecords.forEach {
-                println("${it.value} ${it.ranges.joinToString(",")}")
-            }
+
             val cleanedRecords = collapsedRecords.map(::step2ReplaceObviousValues).filterNot { it.value.contains("?") }
 
             val nonCleanedRecords = collapsedRecords.map(::step2ReplaceObviousValues).filter { it.value.contains("?") }
@@ -78,6 +79,48 @@ object Day12 {
         }
     }
 
+    private fun step3FillFirstGaps(record: Record): Record {
+        var firstHalf = record.value.substring(0, record.ranges.first())
+        val secondHalf = record.value.substring(record.ranges.first(), record.value.length)
+
+        return if (firstHalf.contains("#")) {
+            val firstIndex = firstHalf.indexOf('#')
+            val lastIndex = firstHalf.lastIndexOf('#')
+            firstHalf = firstHalf.substring(0, firstIndex) + "#".repeat(lastIndex - firstIndex) + firstHalf.substring(
+                lastIndex,
+                firstHalf.length
+            )
+
+            record.copy(value = firstHalf + secondHalf)
+        } else {
+            record
+        }
+    }
+
+    private fun step3FillLastGaps(record: Record): Record {
+        val groupLength = record.ranges.last()
+        val firstHalf = record.value.substring(0, record.value.length - groupLength)
+        var secondHalf = record.value.substring(record.value.length - groupLength, record.value.length)
+
+        return if (secondHalf.contains("#")) {
+            val firstIndex = secondHalf.indexOf('#')
+            val lastIndex = secondHalf.lastIndexOf('#')
+            secondHalf =
+                secondHalf.substring(0, firstIndex) + "#".repeat(lastIndex - firstIndex) + secondHalf.substring(
+                    lastIndex,
+                    secondHalf.length
+                )
+
+            record.copy(value = firstHalf + secondHalf)
+        } else {
+            record
+        }
+    }
+
+    /*
+     .??????#???#??????? 2,7,1,1
+     ??????##??#???????? 1,10,1
+     */
     private fun numberOfCombinations(record: Record): Int {
         val unknownIndices = record.value.indices.filter { record.value[it] == '?' }
         val missingParts = record.ranges.sum() - record.value.count { it == '#' }
@@ -87,9 +130,14 @@ object Day12 {
         val dotsInput = (0 until missingDots).map { '.' }
         val input = partsInput + dotsInput
 
-        val possibleCombinations = permutations(input).map { it.joinToString("") }.distinct()
+        var number = 0
+        val combinations = allPermutations(input)
+        println("${record.value} - ${input.size} - ${combinations.size}")
 
-        val combinations = possibleCombinations.mapNotNull { combination ->
+        while (combinations.isNotEmpty()) {
+            val combination = combinations.first()
+            combinations.remove(combination)
+
             val newValue = record.value.mapIndexed { index, c ->
                 if (unknownIndices.contains(index)) {
                     combination[unknownIndices.indexOf(index)]
@@ -98,33 +146,28 @@ object Day12 {
                 }
             }.joinToString("")
 
-            val newRecord = record.copy(value = newValue)
-            val isValid = isValidCombination(record.copy(value = newValue))
-
-            if (isValid) {
-                newRecord
-            } else {
-                null
-            }
-        }.distinct()
-
-        return combinations.size
-    }
-
-    private fun permutations(input: List<Char>): List<CharArray> {
-        val solutions = mutableListOf<CharArray>()
-        permutationsRecursive(input, 0, solutions)
-        return solutions
-    }
-
-
-    private fun permutationsRecursive(input: List<Char>, index: Int, answers: MutableList<CharArray>) {
-        if (index == input.lastIndex) answers.add(input.toCharArray())
-        for (i in index..input.lastIndex) {
-            Collections.swap(input, index, i)
-            permutationsRecursive(input, index + 1, answers)
-            Collections.swap(input, i, index)
+            if (isValidCombination(record.copy(value = newValue))) number++
         }
+
+        return number
+    }
+
+    private fun <T> allPermutations(set: List<T>): MutableSet<List<T>> {
+        if (set.isEmpty()) return mutableSetOf()
+
+        fun <T> _allPermutations(list: List<T>): MutableSet<List<T>> {
+            if (list.isEmpty()) return mutableSetOf(emptyList())
+
+            val result: MutableSet<List<T>> = mutableSetOf()
+            for (i in list.indices) {
+                _allPermutations(list - list[i]).forEach {
+                        item -> result.add(item + list[i])
+                }
+            }
+            return result
+        }
+
+        return _allPermutations(set.toList())
     }
 
     private fun isValidCombination(record: Record): Boolean {
