@@ -34,9 +34,12 @@ object Main {
         Day09.puzzle2()
 
         Day10.puzzle1()
-        Day10.puzzle2()
+        // Optimize
+        //Day10.puzzle2()
 
         Day11.puzzle1()
         Day11.puzzle2()
+
+        Day12.puzzle1()
     }
 }
