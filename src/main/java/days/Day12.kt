@@ -12,7 +12,7 @@ object Day12 {
     fun puzzle1() {
         readInput("day12Input") { lines ->
             val records = lines.toList().map(::parseRecord)
-            val brokenParts = setBrokenParts(records[5])
+            val brokenParts = records.map(::setBrokenParts)
         }
     }
 
@@ -37,22 +37,9 @@ object Day12 {
         return 0
     }
 
-    /*
-        // GET THIS!!
-        ?###???????? 3,2,1
-        .###.???????
-
-        ?#?#?#?#?#?#?#? 1,3,1,6
-        .#.#?#.#.#?#?#?
-
-
-        ???.###
-        ??
-         ??
-          ?.###
-     */
     private fun setBrokenParts(record: Record): Record {
         val ranges = mutableListOf<IntRange>()
+        // REVIEW
         record.ranges.forEachIndexed { index, amount ->
             val start = if (index == 0) {
                 0
@@ -69,7 +56,16 @@ object Day12 {
             ranges.add(start until end)
         }
 
-        val valuePairs = ranges.mapIndexed { index, range ->
+        val valuePairs = replaceUniquePositions(ranges, record)
+        val fixedValue = predictLastEdge(valuePairs)
+        val fixedValue2 = predictFirstEdge(valuePairs)
+        val fixedValue3 = replaceUniquePositions(fixedValue)
+
+        return record
+    }
+
+    private fun replaceUniquePositions(input: List<IntRange>, record: Record): List<Pair<String, Int>> {
+        return input.mapIndexed { index, range ->
             val value = record.value.substring(range)
             val amount = record.ranges[index]
 
@@ -81,11 +77,39 @@ object Day12 {
 
             fixedValue to amount
         }
-        val fixedValue = valuePairs.mapIndexed { index, (value, amount) ->
+    }
+
+    private fun predictLastEdge(input: List<Pair<String, Int>>): List<Pair<String, Int>> {
+        return input.mapIndexed { index, (value, amount) ->
+            val nextSymbol = if (index == input.size - 1) {
+                null
+            } else {
+                input[index + 1].first.first()
+            }
+
+            val lastSymbol = value.last()
+
+            val fixedLastSymbol = if (lastSymbol == '?') {
+                if (nextSymbol == '#') {
+                    '.'
+                } else {
+                    lastSymbol
+                }
+            } else {
+                lastSymbol
+            }
+            val lastIndex = value.length - 1
+
+            value.mapIndexed { index, c -> if (index == lastIndex) fixedLastSymbol else c }.joinToString("") to amount
+        }
+    }
+
+    private fun predictFirstEdge(input: List<Pair<String, Int>>): List<Pair<String, Int>> {
+        return input.mapIndexed { index, (value, amount) ->
             val previousSymbol = if (index == 0) {
                 null
             } else {
-                valuePairs[index - 1].first.last()
+                input[index - 1].first.last()
             }
 
             val firstSymbol = value.first()
@@ -102,22 +126,19 @@ object Day12 {
 
             value.replaceFirst(firstSymbol, fixedFirstSymbol) to amount
         }
+    }
 
-        val amountsToLocate = fixedValue.map { (value, amount) ->
-            if (value.contains('?')) {
-                amount
+    private fun replaceUniquePositions(input: List<Pair<String, Int>>): List<Pair<String, Int>> {
+        return input.map { (value, amount) ->
+            val fixedValue = if (value.count { it == '?' } + value.count { it == '#' } == amount) {
+                value.replace('?', '#')
             } else {
-                null
+                value
             }
-        }
 
-        return record
+            fixedValue to amount
+        }
     }
 
     private data class Record(val value: String, val ranges: List<Int>)
-    private data class RecordSegmentGroup(
-        val previous: Pair<String, Int>?,
-        val current: Pair<String, Int>,
-        val next: Pair<String, Int>?
-    )
 }
