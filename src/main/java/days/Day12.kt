@@ -94,7 +94,7 @@ object Day12 {
 
     private fun unfold(record: Record): Record {
         return record.copy(
-            value = record.value.repeat(5).joinToString(""),
+            value = record.value.repeat(5).joinToString("?"),
             ranges = record.ranges.repeat(5).flatten().toList()
         )
     }
