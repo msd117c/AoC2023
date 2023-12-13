@@ -17,14 +17,6 @@ object Day12 {
         }
     }
 
-    private fun parseRecord(line: String): Record {
-        val groups = Regex(PATTERN).find(line)?.groupValues ?: throw IllegalArgumentException("Record is invalid!")
-        val value = groups[1]
-        val ranges = groups[2].split(",").map { it.toInt() }
-
-        return Record(value, ranges)
-    }
-
     private fun countArrangements(record: Record): Int {
         val partsAmount = record.ranges.sum()
         val unassignedParts = partsAmount - record.value.count { it == '#' }
@@ -86,6 +78,33 @@ object Day12 {
     private fun <T : Any> T.repeat(times: Int? = null): Sequence<T> = sequence {
         var count = 0
         while (times == null || count++ < times) yield(this@repeat)
+    }
+
+    fun puzzle2() {
+        readInput("day12Input") { lines ->
+            val result = lines.map { line ->
+                val record = parseRecord(line)
+                val unfoldedRecord = unfold(record)
+                0
+            }.sum()
+
+            println("Day 12 puzzle 2 result is: $result")
+        }
+    }
+
+    private fun unfold(record: Record): Record {
+        return record.copy(
+            value = record.value.repeat(5).joinToString(""),
+            ranges = record.ranges.repeat(5).flatten().toList()
+        )
+    }
+
+    private fun parseRecord(line: String): Record {
+        val groups = Regex(PATTERN).find(line)?.groupValues ?: throw IllegalArgumentException("Record is invalid!")
+        val value = groups[1]
+        val ranges = groups[2].split(",").map { it.toInt() }
+
+        return Record(value, ranges)
     }
 
     private fun isValidCombination(record: Record): Boolean {
