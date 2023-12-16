@@ -9,8 +9,17 @@ object Day13 {
         readInput("day13Input") { lines ->
             val blocks = parseBlocks(lines.toList())
 
-            val result = blocks.sumOf { block -> findReflections(block) }
+            val result = blocks.sumOf { block -> block.findReflections(smudge = false) }
             println("Day 13 puzzle 1 result is: $result")
+        }
+    }
+
+    fun puzzle2() {
+        readInput("day13Input") { lines ->
+            val blocks = parseBlocks(lines.toList())
+
+            val result = blocks.sumOf { block -> block.findReflections(true) }
+            println("Day 13 puzzle 2 result is: $result")
         }
     }
 
@@ -28,59 +37,66 @@ object Day13 {
         return blocks
     }
 
-    private fun findReflections(block: List<String>): Int {
-        val horizontal = findHorizontalReflection(block)
-        if (horizontal != 0) {
-            println(horizontal)
-            return horizontal
-        }
+    private fun List<String>.findReflections(smudge: Boolean): Int {
+        val vertical = findVerticalReflection(smudge)
+        if (vertical != 0) return vertical
 
-        val vertical = findVerticalReflection(block)
-        if (vertical != 0) {
-            println(vertical)
-            return vertical
-        }
+        val horizontal = findHorizontalReflection(smudge)
+        if (horizontal != 0) return horizontal
 
         return 0
     }
 
-    private fun findVerticalReflection(block: List<String>): Int {
-        val columns = block.first().mapIndexed { index, _ ->
-            block.map { line -> line[index] }.joinToString("")
+    private fun List<String>.findVerticalReflection(smudge: Boolean): Int {
+        val columns = first().mapIndexed { index, _ ->
+            map { line -> line[index] }.joinToString("")
         }
 
         var verticalIndex = (columns.size - 1 downTo 1).firstOrNull { index ->
-            columns[index] == columns[index - 1] && columns.isValid(index)
+            isValid(columns[index], columns[index - 1], smudge) && columns.isValid(index, smudge)
         }
 
         if (verticalIndex != null) return verticalIndex
 
-        verticalIndex = (0 until  columns.size - 1).firstOrNull { index ->
-            columns[index] == columns[index + 1] && columns.isValid(index)
+        verticalIndex = (0 until columns.size - 1).firstOrNull { index ->
+            isValid(columns[index], columns[index + 1], smudge) && columns.isValid(index, smudge)
         }?.plus(1)
 
         return verticalIndex ?: 0
     }
 
-    private fun findHorizontalReflection(block: List<String>): Int {
-        var horizontalIndex = (block.size - 1 downTo  1).firstOrNull { index ->
-            block[index] == block[index - 1] && block.isValid(index)
+    private fun List<String>.findHorizontalReflection(smudge: Boolean): Int {
+        var horizontalIndex = (size - 1 downTo 1).firstOrNull { index ->
+            isValid(this[index], this[index - 1], smudge) && isValid(index, smudge)
         }
 
         if (horizontalIndex != null) return horizontalIndex.times(100)
 
-        horizontalIndex = (0 until  block.size - 1).firstOrNull { index ->
-            block[index] == block[index + 1] && block.isValid(index)
+        horizontalIndex = (0 until size - 1).firstOrNull { index ->
+            isValid(this[index], this[index + 1], smudge) && isValid(index, smudge)
         }?.plus(1)
 
         return horizontalIndex?.times(100) ?: 0
     }
 
-    private fun List<String>.isValid(index: Int): Boolean {
+    private fun List<String>.isValid(index: Int, smudge: Boolean): Boolean {
         val firstHalf = subList(0, index).reversed()
         val secondHalf = subList(index, size)
         val length = min(firstHalf.size, secondHalf.size)
 
-        return firstHalf.subList(0, length) == secondHalf.subList(0, length)
+        var errors = 0
+        firstHalf.subList(0, length).forEachIndexed { y, line ->
+            line.forEachIndexed { x, c ->
+                if (c != secondHalf.subList(0, length)[y][x]) errors++
+            }
+        }
+        return if (smudge) errors == 1 else errors == 0
+    }
+
+    private fun isValid(firstLine: String, secondLine: String, smudge: Boolean): Boolean {
+        var errors = 0
+        firstLine.forEachIndexed { x, c -> if (secondLine[x] != c) errors++ }
+
+        return if (smudge) errors <= 1 else errors == 0
     }
 }
