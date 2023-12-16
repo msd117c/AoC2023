@@ -52,29 +52,17 @@ object Day13 {
             map { line -> line[index] }.joinToString("")
         }
 
-        var verticalIndex = (columns.size - 1 downTo 1).firstOrNull { index ->
-            isValid(columns[index], columns[index - 1], smudge) && columns.isValid(index, smudge)
+        val verticalIndex = (columns.size - 1 downTo 1).firstOrNull { index ->
+            isReflectionLine(columns[index], columns[index - 1], smudge) && columns.isValid(index, smudge)
         }
-
-        if (verticalIndex != null) return verticalIndex
-
-        verticalIndex = (0 until columns.size - 1).firstOrNull { index ->
-            isValid(columns[index], columns[index + 1], smudge) && columns.isValid(index, smudge)
-        }?.plus(1)
 
         return verticalIndex ?: 0
     }
 
     private fun List<String>.findHorizontalReflection(smudge: Boolean): Int {
-        var horizontalIndex = (size - 1 downTo 1).firstOrNull { index ->
-            isValid(this[index], this[index - 1], smudge) && isValid(index, smudge)
+        val horizontalIndex = (size - 1 downTo 1).firstOrNull { index ->
+            isReflectionLine(this[index], this[index - 1], smudge) && isValid(index, smudge)
         }
-
-        if (horizontalIndex != null) return horizontalIndex.times(100)
-
-        horizontalIndex = (0 until size - 1).firstOrNull { index ->
-            isValid(this[index], this[index + 1], smudge) && isValid(index, smudge)
-        }?.plus(1)
 
         return horizontalIndex?.times(100) ?: 0
     }
@@ -84,18 +72,20 @@ object Day13 {
         val secondHalf = subList(index, size)
         val length = min(firstHalf.size, secondHalf.size)
 
-        var errors = 0
-        firstHalf.subList(0, length).forEachIndexed { y, line ->
-            line.forEachIndexed { x, c ->
-                if (c != secondHalf.subList(0, length)[y][x]) errors++
+        val firstReflected = firstHalf.subList(0, length)
+        val secondReflected = secondHalf.subList(0, length)
+
+        val errors = firstReflected.flatMapIndexed { y, line ->
+            line.mapIndexed { x, c ->
+                if (c != secondReflected[y][x]) 1 else 0
             }
-        }
+        }.sum()
+
         return if (smudge) errors == 1 else errors == 0
     }
 
-    private fun isValid(firstLine: String, secondLine: String, smudge: Boolean): Boolean {
-        var errors = 0
-        firstLine.forEachIndexed { x, c -> if (secondLine[x] != c) errors++ }
+    private fun isReflectionLine(firstLine: String, secondLine: String, smudge: Boolean): Boolean {
+        val errors = firstLine.mapIndexed { x, c -> if (secondLine[x] != c) 1 else 0 }.sum()
 
         return if (smudge) errors <= 1 else errors == 0
     }
