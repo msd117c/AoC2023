@@ -5,9 +5,10 @@ import kotlin.math.min
 
 object Day13 {
 
+    private const val BLOCKS_PATTERN = "\n\n"
     fun puzzle1() {
         readInput("day13Input") { lines ->
-            val blocks = parseBlocks(lines.toList())
+            val blocks = lines.joinToString("\n").split(Regex(BLOCKS_PATTERN)).map { it.lines() }
 
             val result = blocks.sumOf { block -> block.findReflections(smudge = false) }
             println("Day 13 puzzle 1 result is: $result")
@@ -16,25 +17,11 @@ object Day13 {
 
     fun puzzle2() {
         readInput("day13Input") { lines ->
-            val blocks = parseBlocks(lines.toList())
+            val blocks = lines.joinToString("\n").split(Regex(BLOCKS_PATTERN)).map { it.lines() }
 
             val result = blocks.sumOf { block -> block.findReflections(true) }
             println("Day 13 puzzle 2 result is: $result")
         }
-    }
-
-    private fun parseBlocks(lines: List<String>): List<List<String>> {
-        val blocks = mutableListOf(mutableListOf<String>())
-
-        lines.forEach { line ->
-            if (line.isEmpty()) {
-                blocks.add(mutableListOf())
-            } else {
-                blocks.last().add(line)
-            }
-        }
-
-        return blocks
     }
 
     private fun List<String>.findReflections(smudge: Boolean): Int {
@@ -68,16 +55,13 @@ object Day13 {
     }
 
     private fun List<String>.isValid(index: Int, smudge: Boolean): Boolean {
-        val firstHalf = subList(0, index).reversed()
-        val secondHalf = subList(index, size)
-        val length = min(firstHalf.size, secondHalf.size)
+        val length = min(index, size - index)
+        val firstHalf = subList(index - length, index).reversed()
+        val secondHalf = subList(index, length + index)
 
-        val firstReflected = firstHalf.subList(0, length)
-        val secondReflected = secondHalf.subList(0, length)
-
-        val errors = firstReflected.flatMapIndexed { y, line ->
+        val errors = firstHalf.flatMapIndexed { y, line ->
             line.mapIndexed { x, c ->
-                if (c != secondReflected[y][x]) 1 else 0
+                if (c != secondHalf[y][x]) 1 else 0
             }
         }.sum()
 
