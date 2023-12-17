@@ -12,7 +12,7 @@ object Day17 {
 
     fun puzzle1() {
         readInput("day17Input") { lines ->
-            val map = lines.toList().map { it.toCharArray() }.toTypedArray()
+            val map = lines.toList().map { it.map { c -> c.digitToInt() }.toIntArray() }.toTypedArray()
             val start = Coordinates(x = 0, y = 0)
             val end = Coordinates(x = map.first().lastIndex, y = map.lastIndex)
 
@@ -22,24 +22,7 @@ object Day17 {
         }
     }
 
-    private fun Array<CharArray>.drawMap(coordinates: List<Movement>) {
-        indices.forEach { y ->
-            first().indices.forEach { x ->
-                if (coordinates.map { it.coordinates }.contains(Coordinates(x, y))) {
-                    val movement = coordinates.first { it.coordinates == Coordinates(x, y) }
-                    when (movement.direction) {
-                        Direction.HORIZONTAL -> print('>')
-                        Direction.VERTICAL -> print('V')
-                    }
-                } else {
-                    print('.')
-                }
-            }
-            println()
-        }
-    }
-
-    private fun Array<CharArray>.dijkstra(start: Coordinates): Map<Coordinates, Pair<MutableList<Movement>, Int>> {
+    private fun Array<IntArray>.dijkstra(start: Coordinates): Map<Coordinates, Pair<MutableList<Movement>, Int>> {
         val paths = mutableMapOf(start to (mutableListOf<Movement>() to 0))
         val queue = mutableListOf(start to mutableListOf(Movement(start, Direction.HORIZONTAL)))
 
@@ -79,7 +62,7 @@ object Day17 {
         return Movement(next, direction)
     }
 
-    private fun Array<CharArray>.findNeighbors(coordinates: Coordinates, path: List<Movement>): List<Path> {
+    private fun Array<IntArray>.findNeighbors(coordinates: Coordinates, path: List<Movement>): List<Path> {
         val lastMovements = path.takeLast(3)
 
         val latest = path.dropLast(1).lastOrNull()?.coordinates
@@ -109,23 +92,29 @@ object Day17 {
 
                 else -> allOptions
             }
-        } else {
-            allOptions
-        }
+        } else allOptions
 
         return nextOptions
-            .filter { neighborCoordinates ->
-                val x = neighborCoordinates.x
-                val y = neighborCoordinates.y
-
-                y in 0..lastIndex && x in 0..first().lastIndex
-            }
+            .filter { it.y in 0..lastIndex && it.x in 0..first().lastIndex }
             .filterNot { it == latest }
-            .map { neighborCoordinates ->
-                val weight = this[neighborCoordinates.y][neighborCoordinates.x].toString().toInt()
+            .map { Path(it, this[it.y][it.x]) }
+    }
 
-                Path(neighborCoordinates, weight)
+    private fun Array<IntArray>.drawMap(coordinates: List<Movement>) {
+        indices.forEach { y ->
+            first().indices.forEach { x ->
+                if (coordinates.map { it.coordinates }.contains(Coordinates(x, y))) {
+                    val movement = coordinates.first { it.coordinates == Coordinates(x, y) }
+                    when (movement.direction) {
+                        Direction.HORIZONTAL -> print('>')
+                        Direction.VERTICAL -> print('V')
+                    }
+                } else {
+                    print('.')
+                }
             }
+            println()
+        }
     }
 
     private data class Path(val coordinates: Coordinates, val weight: Int)
