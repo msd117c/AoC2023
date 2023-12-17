@@ -47,6 +47,10 @@ object Main {
         Day13.puzzle2()
 
         Day14.puzzle1()
+        // Review
         Day14.puzzle2()
+
+        Day15.puzzle1()
+        Day15.puzzle2()
     }
 }
