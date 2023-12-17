@@ -16,36 +16,62 @@ object Day16 {
             val map = lines.toList().map { it.toCharArray() }.toTypedArray()
 
             val start = Coordinates(x = 0, y = 0)
-            val visitedTiles = mutableMapOf(start to Direction.RIGHT to true)
+            val direction = Direction.RIGHT
+            val visitedTiles = mutableMapOf((start to direction) to true)
 
-            map.moveBeam(start, visitedTiles)
+            map.moveBeam(start, direction, visitedTiles)
 
             val energizedTiles = visitedTiles.keys.distinctBy { it.first }.size
             println("Day 16 puzzle 1 result is: $energizedTiles")
         }
     }
 
-    private fun Array<CharArray>.draw(visitedTiles: MutableMap<Pair<Coordinates, Direction>, Boolean>) {
-        indices.forEach { y ->
-            this[y].indices.forEach { x ->
-                if (visitedTiles.any { it.key.first == Coordinates(x, y) }) {
-                    print('#')
-                } else {
-                    print('.')
-                }
-            }
-            println()
+    fun puzzle2() {
+        readInput("day16Input") { lines ->
+            val map = lines.toList().map { it.toCharArray() }.toTypedArray()
+
+            val energizedTiles = map.tryAllStartingPoints()
+            println("Day 16 puzzle 2 result is: $energizedTiles")
         }
     }
 
-    private fun Array<CharArray>.moveBeam(start: Coordinates, visitedTiles: MutableMap<Pair<Coordinates, Direction>, Boolean>) {
-        val queue = mutableListOf(start to Direction.RIGHT)
+    private fun Array<CharArray>.tryAllStartingPoints(): Int {
+        val startingPointsAndDirections = (first().mapIndexed { x, _ ->
+            Coordinates(x, y = 0) to Direction.DOWN
+        } + last().mapIndexed { x, _ ->
+            Coordinates(x, y = lastIndex) to Direction.UP
+        } + mapIndexed { y, _ ->
+            Coordinates(x = 0, y) to Direction.RIGHT
+        } + mapIndexed { y, _ ->
+            Coordinates(x = first().lastIndex, y) to Direction.LEFT
+        }).toMutableList()
+
+        var energizedTiles = 0
+        while (startingPointsAndDirections.isNotEmpty()) {
+            val (start, direction) = startingPointsAndDirections.removeAt(0)
+            val visitedTiles = mutableMapOf(start to Direction.RIGHT to true)
+
+            moveBeam(start, direction, visitedTiles)
+
+            val newEnergizedTiles = visitedTiles.keys.distinctBy { it.first }.size
+            if (newEnergizedTiles > energizedTiles) energizedTiles = newEnergizedTiles
+        }
+
+        return energizedTiles
+    }
+
+    private fun Array<CharArray>.moveBeam(
+        start: Coordinates,
+        direction: Direction,
+        visitedTiles: MutableMap<Pair<Coordinates, Direction>, Boolean>
+    ) {
+        val queue = mutableListOf(start to direction)
 
         while (queue.isNotEmpty()) {
-            val (currentTile, direction) = queue.removeAt(0)
-            visitedTiles[currentTile to direction] = true
+            val (currentTile, currentDirection) = queue.removeAt(0)
+            visitedTiles[currentTile to currentDirection] = true
 
-            direction.getNextDirections(this[currentTile.y][currentTile.x]).forEach {
+            currentDirection.getNextDirections(this[currentTile.y][currentTile.x]).forEach {
                 val nextTile = getNextTile(currentTile, it)
                 if (nextTile != null && !visitedTiles.containsKey(nextTile to it)) {
                     queue.add(nextTile to it)
