@@ -1,9 +1,15 @@
 package days
 
 import utils.InputReader.readInput
+import kotlin.math.abs
 
 
 object Day17 {
+
+    private enum class Direction(val coordinates: Coordinates) {
+        HORIZONTAL(Coordinates(x = 1, y = 0)),
+        VERTICAL(Coordinates(x = 0, y = 1))
+    }
 
     fun puzzle1() {
         readInput("day17Input") { lines ->
@@ -33,55 +39,69 @@ object Day17 {
     private fun Array<CharArray>.dijkstra(
         start: Coordinates,
         end: Coordinates
-    ): Map<Coordinates, Pair<List<Coordinates>, Int>> {
+    ): Map<Coordinates, Pair<MutableList<Coordinates>, Int>> {
         val distances = mutableMapOf(start to 0)
+        val paths = mutableMapOf(start to (mutableListOf<Coordinates>() to 0))
         val queue = mutableListOf(start to mutableListOf(start))
 
         while (queue.isNotEmpty()) {
             val (current, path) = queue.removeAt(0)
 
-            val neighbors = findNeighbors(current, path.take(path.size - 1))
+            val neighbors = findNeighbors(current, path.dropLast(1))
 
             for (neighbor in neighbors) {
                 val newDistance = distances[current]!! + neighbor.weight
-                if (neighbor.coordinates == end) return mutableMapOf(end to (path + listOf(end) to newDistance))
+                //if (neighbor.coordinates == end) return mutableMapOf(end to (path + listOf(end) to newDistance))
 
                 if (!distances.containsKey(neighbor.coordinates) || newDistance < distances[neighbor.coordinates]!!) {
                     distances[neighbor.coordinates] = newDistance
 
                     val newPath = neighbor.coordinates to (path + listOf(neighbor.coordinates)).toMutableList()
                     queue.add(newPath)
+                    paths[neighbor.coordinates] = (path + listOf(neighbor.coordinates)).toMutableList() to newDistance
                 }
             }
         }
 
-        return emptyMap()
+        //return emptyMap()
+        return paths
     }
 
     private fun Array<CharArray>.findNeighbors(coordinates: Coordinates, path: List<Coordinates>): List<Path> {
-        val lastThree = path.takeLast(2)
+        val lastFour = path.takeLast(4)
+        val lastDirections = if (lastFour.size == 4) {
+            lastFour.indices.mapNotNull { index ->
+                if (index == 0) {
+                    null
+                } else {
+                    val dX = abs(lastFour[index].x - lastFour[index - 1].x)
+                    val dY = abs(lastFour[index].y - lastFour[index - 1].y)
+                    val dCoordinates = Coordinates(dX, dY)
+
+                    when (dCoordinates) {
+                        Direction.VERTICAL.coordinates -> Direction.VERTICAL
+                        Direction.HORIZONTAL.coordinates -> Direction.HORIZONTAL
+                        else -> error("No valid case")
+                    }
+                }
+            }
+        } else {
+            emptyList()
+        }
+
         val latest = path.lastOrNull()
 
-        val nextOptions = if (lastThree.size == 2) {
-            when {
-                lastThree.map { it.x }.distinct().size == 1 -> {
+        val nextOptions = if (lastDirections.size == 3 && lastDirections.distinct().size == 1) {
+            when (lastDirections.last()) {
+                Direction.VERTICAL -> {
                     listOf(
                         Coordinates(x = coordinates.x + 1, y = coordinates.y),
                         Coordinates(x = coordinates.x - 1, y = coordinates.y),
                     )
                 }
 
-                lastThree.map { it.y }.distinct().size == 1 -> {
+                Direction.HORIZONTAL -> {
                     listOf(
-                        Coordinates(x = coordinates.x, y = coordinates.y + 1),
-                        Coordinates(x = coordinates.x, y = coordinates.y - 1),
-                    )
-                }
-
-                else -> {
-                    listOf(
-                        Coordinates(x = coordinates.x + 1, y = coordinates.y),
-                        Coordinates(x = coordinates.x - 1, y = coordinates.y),
                         Coordinates(x = coordinates.x, y = coordinates.y + 1),
                         Coordinates(x = coordinates.x, y = coordinates.y - 1),
                     )
