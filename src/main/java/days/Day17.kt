@@ -17,17 +17,21 @@ object Day17 {
             val start = Coordinates(x = 0, y = 0)
             val end = Coordinates(x = map.first().lastIndex, y = map.lastIndex)
 
-            val distances = map.dijkstra(start, end)
+            val distances = map.dijkstra(start)
             map.drawMap(distances[end]!!.first)
             println(distances[end]!!.second)
         }
     }
 
-    private fun Array<CharArray>.drawMap(coordinates: List<Coordinates>) {
+    private fun Array<CharArray>.drawMap(coordinates: List<Movement>) {
         indices.forEach { y ->
             first().indices.forEach { x ->
-                if (coordinates.contains(Coordinates(x, y))) {
-                    print('#')
+                if (coordinates.map { it.coordinates }.contains(Coordinates(x, y))) {
+                    val movement = coordinates.first { it.coordinates == Coordinates(x, y) }
+                    when (movement.direction) {
+                        Direction.HORIZONTAL -> print('>')
+                        Direction.VERTICAL -> print('V')
+                    }
                 } else {
                     print('.')
                 }
@@ -36,63 +40,54 @@ object Day17 {
         }
     }
 
-    private fun Array<CharArray>.dijkstra(
-        start: Coordinates,
-        end: Coordinates
-    ): Map<Coordinates, Pair<MutableList<Coordinates>, Int>> {
+    private fun Array<CharArray>.dijkstra(start: Coordinates): Map<Coordinates, Pair<MutableList<Movement>, Int>> {
         val distances = mutableMapOf(start to 0)
-        val paths = mutableMapOf(start to (mutableListOf<Coordinates>() to 0))
-        val queue = mutableListOf(start to mutableListOf(start))
+        val paths = mutableMapOf(start to (mutableListOf<Movement>() to 0))
+        val queue = mutableListOf(start to mutableListOf(Movement(start, Direction.HORIZONTAL)))
 
         while (queue.isNotEmpty()) {
             val (current, path) = queue.removeAt(0)
 
-            val neighbors = findNeighbors(current, path.dropLast(1))
+            val neighbors = findNeighbors(current, path)
 
             for (neighbor in neighbors) {
                 val newDistance = distances[current]!! + neighbor.weight
-                //if (neighbor.coordinates == end) return mutableMapOf(end to (path + listOf(end) to newDistance))
 
                 if (!distances.containsKey(neighbor.coordinates) || newDistance < distances[neighbor.coordinates]!!) {
                     distances[neighbor.coordinates] = newDistance
 
-                    val newPath = neighbor.coordinates to (path + listOf(neighbor.coordinates)).toMutableList()
+                    val newMovement = getMovement(current, neighbor.coordinates)
+                    val newPath = neighbor.coordinates to (path + listOf(newMovement)).toMutableList()
                     queue.add(newPath)
-                    paths[neighbor.coordinates] = (path + listOf(neighbor.coordinates)).toMutableList() to newDistance
+                    paths[neighbor.coordinates] = (path + listOf(newMovement)).toMutableList() to newDistance
                 }
             }
         }
 
-        //return emptyMap()
         return paths
     }
 
-    private fun Array<CharArray>.findNeighbors(coordinates: Coordinates, path: List<Coordinates>): List<Path> {
-        val lastFour = path.takeLast(4)
-        val lastDirections = if (lastFour.size == 4) {
-            lastFour.indices.mapNotNull { index ->
-                if (index == 0) {
-                    null
-                } else {
-                    val dX = abs(lastFour[index].x - lastFour[index - 1].x)
-                    val dY = abs(lastFour[index].y - lastFour[index - 1].y)
-                    val dCoordinates = Coordinates(dX, dY)
+    private fun getMovement(current: Coordinates, next: Coordinates): Movement {
+        val dX = abs(current.x - next.x)
+        val dY = abs(current.y - next.y)
+        val dCoordinates = Coordinates(dX, dY)
 
-                    when (dCoordinates) {
-                        Direction.VERTICAL.coordinates -> Direction.VERTICAL
-                        Direction.HORIZONTAL.coordinates -> Direction.HORIZONTAL
-                        else -> error("No valid case")
-                    }
-                }
-            }
-        } else {
-            emptyList()
+        val direction = when (dCoordinates) {
+            Direction.VERTICAL.coordinates -> Direction.VERTICAL
+            Direction.HORIZONTAL.coordinates -> Direction.HORIZONTAL
+            else -> error("No valid case")
         }
 
-        val latest = path.lastOrNull()
+        return Movement(next, direction)
+    }
 
-        val nextOptions = if (lastDirections.size == 3 && lastDirections.distinct().size == 1) {
-            when (lastDirections.last()) {
+    private fun Array<CharArray>.findNeighbors(coordinates: Coordinates, path: List<Movement>): List<Path> {
+        val lastMovements = path.takeLast(3)
+
+        val latest = path.lastOrNull()?.coordinates
+
+        val nextOptions = if (lastMovements.size == 3 && lastMovements.map { it.direction }.distinct().size == 1) {
+            when (lastMovements.map { it.direction }.last()) {
                 Direction.VERTICAL -> {
                     listOf(
                         Coordinates(x = coordinates.x + 1, y = coordinates.y),
@@ -132,5 +127,6 @@ object Day17 {
     }
 
     private data class Path(val coordinates: Coordinates, val weight: Int)
+    private data class Movement(val coordinates: Coordinates, val direction: Direction)
     private data class Coordinates(val x: Int, val y: Int)
 }
