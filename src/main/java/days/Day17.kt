@@ -1,13 +1,16 @@
 package days
 
 import utils.InputReader.readInput
-import kotlin.math.abs
+import java.util.*
+
 
 object Day17 {
 
     private enum class Direction(val coordinates: Coordinates) {
-        HORIZONTAL(Coordinates(x = 1, y = 0)),
-        VERTICAL(Coordinates(x = 0, y = 1))
+        RIGHT(Coordinates(x = 1, y = 0)),
+        LEFT(Coordinates(x = -1, y = 0)),
+        DOWN(Coordinates(x = 0, y = 1)),
+        UP(Coordinates(x = 0, y = -1))
     }
 
     fun puzzle1() {
@@ -16,98 +19,128 @@ object Day17 {
             val start = Coordinates(x = 0, y = 0)
             val end = Coordinates(x = map.first().lastIndex, y = map.lastIndex)
 
-            val distances = map.dijkstra(start)
-            map.drawMap(distances[end]!!.first)
-            println(distances[end]!!.second)
+            val (_, heatLoss) = map.dijkstra(start, end, isUltra = false)
+            println("Day 17 puzzle 1 result is: $heatLoss")
         }
     }
 
-    private fun Array<IntArray>.dijkstra(start: Coordinates): Map<Coordinates, Pair<MutableList<Movement>, Int>> {
-        val paths = mutableMapOf(start to (mutableListOf<Movement>() to 0))
-        val queue = mutableListOf(start to mutableListOf(Movement(start, Direction.HORIZONTAL)))
+    fun puzzle2() {
+        readInput("day17Input") { lines ->
+            val map = lines.toList().map { it.map { c -> c.digitToInt() }.toIntArray() }.toTypedArray()
+            val start = Coordinates(x = 0, y = 0)
+            val end = Coordinates(x = map.first().lastIndex, y = map.lastIndex)
+
+            val (_, heatLoss) = map.dijkstra(start, end, isUltra = true)
+            println("Day 17 puzzle 2 result is: $heatLoss")
+        }
+    }
+
+    private fun Array<IntArray>.dijkstra(
+        start: Coordinates,
+        end: Coordinates,
+        isUltra: Boolean
+    ): Pair<List<Node>, Int> {
+        val startNode = Node(start, steps = 0, Direction.RIGHT)
+        val startState = State(startNode, cost = 0, path = emptyList())
+        val queue = PriorityQueue<State>()
+        queue.add(startState)
+        val visited = mutableMapOf<Node, Boolean>()
 
         while (queue.isNotEmpty()) {
-            val (current, path) = queue.removeAt(0)
+            val (currentNode, cost, path) = queue.remove()
 
-            val neighbors = findNeighbors(current, path)
+            if (visited.containsKey(currentNode)) continue
+
+            visited[currentNode] = true
+            if (currentNode.coordinates == end) return path to cost
+
+            val neighbors = findNeighbors(currentNode, isUltra)
 
             neighbors.forEach { neighbor ->
-                val newDistance = paths[current]!!.second + neighbor.weight
+                val newCost = cost + this[neighbor.coordinates.y][neighbor.coordinates.x]
 
-                if (!paths.containsKey(neighbor.coordinates) || newDistance < paths[neighbor.coordinates]!!.second) {
-                    val newMovement = getMovement(current, neighbor.coordinates)
-                    val newPath = (path + listOf(newMovement)).toMutableList()
-                    paths[neighbor.coordinates] = newPath to newDistance
-
-                    val newValue = neighbor.coordinates to newPath
-                    queue.add(newValue)
-                }
+                val newPath = path + listOf(neighbor)
+                val newState = State(neighbor, newCost, newPath)
+                queue.add(newState)
             }
         }
 
-        return paths
+        return emptyList<Node>() to 0
     }
 
-    private fun getMovement(current: Coordinates, next: Coordinates): Movement {
-        val dX = abs(current.x - next.x)
-        val dY = abs(current.y - next.y)
-        val dCoordinates = Coordinates(dX, dY)
+    private fun Direction.left(): Direction {
+        return when (this) {
+            Direction.RIGHT -> Direction.UP
+            Direction.LEFT -> Direction.DOWN
+            Direction.DOWN -> Direction.RIGHT
+            Direction.UP -> Direction.LEFT
+        }
+    }
 
-        val direction = when (dCoordinates) {
-            Direction.VERTICAL.coordinates -> Direction.VERTICAL
-            Direction.HORIZONTAL.coordinates -> Direction.HORIZONTAL
-            else -> error("No valid case")
+    private fun Direction.right(): Direction {
+        return when (this) {
+            Direction.RIGHT -> Direction.DOWN
+            Direction.LEFT -> Direction.UP
+            Direction.DOWN -> Direction.LEFT
+            Direction.UP -> Direction.RIGHT
+        }
+    }
+
+    private fun Coordinates.add(direction: Direction): Coordinates {
+        return Coordinates(x + direction.coordinates.x, y + direction.coordinates.y)
+    }
+
+    private fun Array<IntArray>.findNeighbors(currentNode: Node, isUltra: Boolean): List<Node> {
+        val coordinates = currentNode.coordinates
+        val steps = currentNode.steps
+        val direction = currentNode.direction
+
+        val nextNodes = if (isUltra) {
+            val straight = if (steps < 10) {
+                listOf(Node(coordinates.add(direction), steps = steps + 1, direction))
+            } else emptyList()
+
+            val turns = if (steps > 3) {
+                listOf(
+                    Node(coordinates.add(direction.left()), steps = 1, direction.left()),
+                    Node(coordinates.add(direction.right()), steps = 1, direction.right()),
+                )
+            } else emptyList()
+
+            straight + turns
+        } else {
+            if (steps < 3) {
+                listOf(
+                    Node(coordinates.add(direction), steps = steps + 1, direction),
+                    Node(coordinates.add(direction.left()), steps = 1, direction.left()),
+                    Node(coordinates.add(direction.right()), steps = 1, direction.right()),
+                )
+            } else {
+                listOf(
+                    Node(coordinates.add(direction.left()), steps = 1, direction.left()),
+                    Node(coordinates.add(direction.right()), steps = 1, direction.right()),
+                )
+            }
         }
 
-        return Movement(next, direction)
-    }
+        return nextNodes
+            .filter { nextNode ->
+                val nextCoordinates = nextNode.coordinates
 
-    private fun Array<IntArray>.findNeighbors(coordinates: Coordinates, path: List<Movement>): List<Path> {
-        val lastMovements = path.takeLast(3)
-
-        val latest = path.dropLast(1).lastOrNull()?.coordinates
-
-        val allOptions = listOf(
-            Coordinates(x = coordinates.x + 1, y = coordinates.y),
-            Coordinates(x = coordinates.x - 1, y = coordinates.y),
-            Coordinates(x = coordinates.x, y = coordinates.y + 1),
-            Coordinates(x = coordinates.x, y = coordinates.y - 1),
-        )
-
-        val nextOptions = if (lastMovements.size == 3) {
-            when {
-                lastMovements.all { it.direction == Direction.VERTICAL } -> {
-                    listOf(
-                        Coordinates(x = coordinates.x + 1, y = coordinates.y),
-                        Coordinates(x = coordinates.x - 1, y = coordinates.y),
-                    )
-                }
-
-                lastMovements.all { it.direction == Direction.HORIZONTAL } -> {
-                    listOf(
-                        Coordinates(x = coordinates.x, y = coordinates.y + 1),
-                        Coordinates(x = coordinates.x, y = coordinates.y - 1),
-                    )
-                }
-
-                else -> allOptions
+                nextCoordinates.x in 0..first().lastIndex && nextCoordinates.y in 0..lastIndex
             }
-        } else allOptions
-
-        return nextOptions
-            .filter { it.y in 0..lastIndex && it.x in 0..first().lastIndex }
-            .filterNot { it == latest }
-            .map { Path(it, this[it.y][it.x]) }
     }
 
-    private fun Array<IntArray>.drawMap(coordinates: List<Movement>) {
+    private fun Array<IntArray>.drawMap(coordinates: List<Node>) {
         indices.forEach { y ->
             first().indices.forEach { x ->
                 if (coordinates.map { it.coordinates }.contains(Coordinates(x, y))) {
                     val movement = coordinates.first { it.coordinates == Coordinates(x, y) }
                     when (movement.direction) {
-                        Direction.HORIZONTAL -> print('>')
-                        Direction.VERTICAL -> print('V')
+                        Direction.LEFT -> print('<')
+                        Direction.RIGHT -> print('>')
+                        Direction.UP -> print('^')
+                        Direction.DOWN -> print('V')
                     }
                 } else {
                     print('.')
@@ -117,7 +150,20 @@ object Day17 {
         }
     }
 
-    private data class Path(val coordinates: Coordinates, val weight: Int)
-    private data class Movement(val coordinates: Coordinates, val direction: Direction)
+    private data class Node(val coordinates: Coordinates, val steps: Int, val direction: Direction)
+    private data class State(val node: Node, val cost: Int, val path: List<Node>) : Comparable<State> {
+
+        override fun compareTo(other: State): Int {
+            var diff = cost - other.cost
+            if (diff == 0 && node.direction == other.node.direction) {
+                diff = node.steps - other.node.steps
+            }
+            if (diff == 0) {
+                diff = (other.node.coordinates.y + other.node.coordinates.x) - (node.coordinates.y - node.coordinates.x)
+            }
+            return diff
+        }
+    }
+
     private data class Coordinates(val x: Int, val y: Int)
 }
