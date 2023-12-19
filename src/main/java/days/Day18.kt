@@ -1,6 +1,7 @@
 package days
 
 import utils.InputReader.readInput
+import kotlin.math.abs
 
 object Day18 {
 
@@ -21,24 +22,15 @@ object Day18 {
 
     fun puzzle1() {
         readInput("day18Input") { lines ->
-            val instructions = lines.toList().map { it.parseInstruction() }
-            val start = Coordinates(x = 0, y = 0)
-            val toDigList = instructions.execute(start).distinct()
-            val minX = toDigList.minBy { it.x }.x
-            val minY = toDigList.minBy { it.y }.y
+            val instructions = lines.toList().map { it.parseDigPlan() }
+            val vertices = instructions.executeDigPlan()
 
-            val offsetX = 0 - minX + 1
-            val offsetY = 0 - minY + 1
-
-            val fixedList = toDigList.map { it.copy(x = it.x + offsetX, y = it.y + offsetY) }
-
-            val innerArea = findInnerArea(fixedList)
-            fixedList.drawMap(innerArea)
-            println("Day 18 puzzle 1 result is: ${fixedList.size + innerArea.size}")
+            val result = lavaCapacity(vertices)
+            println("Day 18 puzzle 1 result is: $result")
         }
     }
 
-    private fun String.parseInstruction(): Instruction {
+    private fun String.parseDigPlan(): Instruction {
         val groups = Regex(INSTRUCTION_REGEX).findAll(this).toList()
 
         val directionValue = groups[0].groups[1]?.value ?: error("No valid direction")
@@ -58,44 +50,15 @@ object Day18 {
     private fun puzzle2() {
         readInput("day18Input") { lines ->
             val input = lines.toList()
-            val instructions1 = input.map { it.parseInstruction() }
-            val instructions2 = input.map { it.parseInstruction2() }.mapIndexed { index, instruction ->
-                instruction.copy(steps = instruction.steps.div(instructions1[index].steps))
-            }
-            val start = Coordinates(x = 0, y = 0)
-            val toDigList = instructions2.execute(start).distinct()
-            val minX = toDigList.minBy { it.x }.x
-            val minY = toDigList.minBy { it.y }.y
+            val instructions = input.map { it.parseColorDigPlan() }
+            val vertices = instructions.executeDigPlan()
 
-            val offsetX = 0 - minX + 1
-            val offsetY = 0 - minY + 1
-
-            val fixedList = toDigList.map { it.copy(x = it.x + offsetX, y = it.y + offsetY) }
-
-            val innerArea = findInnerArea(fixedList)
-            fixedList.drawMap(innerArea)
-            println("Day 18 puzzle 2 result is: ${fixedList.size + innerArea.size}")
+            val capacity = lavaCapacity(vertices)
+            println("Day 18 puzzle 2 result is: $capacity")
         }
     }
 
-    private fun calculateGCDForListOfNumbers(numbers: List<Long>): Long {
-        require(numbers.isNotEmpty()) { "List must not be empty" }
-        var result = numbers[0]
-        for (i in 1 until numbers.size) {
-            var num1 = result
-            var num2 = numbers[i]
-            while (num2 != 0L) {
-                val temp = num2
-                num2 = num1 % num2
-                num1 = temp
-            }
-            result = num1
-        }
-        return result
-    }
-
-
-    private fun String.parseInstruction2(): Instruction {
+    private fun String.parseColorDigPlan(): Instruction {
         val groups = Regex(INSTRUCTION_REGEX).findAll(this).toList()
 
         val hex = groups[0].groups[3]?.value ?: error("No valid hex")
@@ -111,91 +74,43 @@ object Day18 {
         return Instruction(direction, steps)
     }
 
-    private fun List<Instruction>.execute(start: Coordinates): List<Coordinates> {
-        var current = start
+    private fun List<Instruction>.executeDigPlan(): List<Coordinates> {
+        return map { instruction -> Coordinates(x = 0, y = 0).execute(instruction) }
+    }
 
-        return listOf(start) + flatMap { instruction ->
-            (0 until instruction.steps).map {
-                current = current.add(instruction.direction)
-                current
-            }
+    private fun lavaCapacity(digPlan: List<Coordinates>): Long {
+        return integerPointsFromPickTheorem(shoelaceFormula(cornerPositions(digPlan)), perimeter(digPlan))
+    }
+
+    private fun integerPointsFromPickTheorem(area: Long, perimeter: Long): Long = area + perimeter / 2L + 1L
+
+    private fun shoelaceFormula(corners: List<Coordinates>): Long {
+        return corners.zipWithNext { a, b -> a.x * b.y - a.y * b.x }.sum() / 2
+    }
+
+    private fun cornerPositions(digPlan: List<Coordinates>): List<Coordinates> {
+        return digPlan.scan(Coordinates(0, 0)) { acc, shiftVector ->
+            acc.add(shiftVector)
         }
     }
 
-    private fun findInnerArea(perimeter: List<Coordinates>): List<Coordinates> {
-        val start = perimeter.findFirstInnerPoint()
-        val visited = mutableListOf(start)
-        val queue = mutableListOf(start)
-
-        while (queue.isNotEmpty()) {
-            val current = queue.removeFirst()
-
-            val neighbors = listOf(
-                Coordinates(x = current.x + 1, y = current.y),
-                Coordinates(x = current.x - 1, y = current.y),
-                Coordinates(x = current.x, y = current.y + 1),
-                Coordinates(x = current.x, y = current.y - 1),
-            ).filterNot { perimeter.contains(it) }.filter { coordinates ->
-                coordinates.x > 0 && coordinates.y > 0
-            }
-
-            neighbors.forEach { neighbor ->
-                if (!visited.contains(neighbor)) {
-                    visited.add(neighbor)
-                    queue.add(neighbor)
-                }
-            }
-        }
-
-        return visited
-    }
-
-    private fun List<Coordinates>.findFirstInnerPoint(): Coordinates {
-        val columns = map { it.x }.distinct()
-
-        columns.forEach { x ->
-            val rows = filter { it.x == x }.map { it.y }
-
-            rows.windowed(size = 2, step = 1).forEach {
-                val first = it.min()
-                val last = it.max()
-
-                ((first + 1) until last).map { y ->
-                    return Coordinates(x, y)
-                }
-            }
-        }
-
-        error("No inner point found!")
-    }
-
-    private fun List<Coordinates>.drawMap(area: List<Coordinates>) {
-        val maxX = maxBy { it.x }.x + 1
-        val minX = minBy { it.x }.x
-        val width = maxX - minX + 2
-
-        val maxY = maxBy { it.y }.y + 1
-        val minY = minBy { it.y }.y
-        val height = maxY - minY + 2
-
-        val map = Array(height) { CharArray(width) { '.' } }
-
-        map.indices.forEach { y ->
-            map.first().indices.forEach { x ->
-                when {
-                    area.contains(Coordinates(x, y)) -> print('O')
-                    map { it.x to it.y }.contains(x to y) -> print('#')
-                    else -> print('.')
-                }
-            }
-            println()
-        }
-    }
-
-    private fun Coordinates.add(direction: Direction): Coordinates {
-        return Coordinates(x = x + direction.coordinates.x, y = y + direction.coordinates.y)
-    }
+    private fun perimeter(digPlan: List<Coordinates>): Long = digPlan.sumOf { abs(it.x) + abs(it.y) }
 
     private data class Instruction(val direction: Direction, val steps: Long)
-    private data class Coordinates(val x: Int, val y: Int)
+    private data class Coordinates(val x: Long, val y: Long) {
+
+        fun add(coordinates: Coordinates): Coordinates {
+            return copy(x = x + coordinates.x, y = y + coordinates.y)
+        }
+
+        fun execute(instruction: Instruction): Coordinates {
+            val direction = instruction.direction
+            val multiplier = instruction.steps
+
+            return copy(
+                x = (x + direction.coordinates.x).times(multiplier),
+                y = (y + direction.coordinates.y).times(multiplier)
+            )
+        }
+    }
 }
