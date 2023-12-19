@@ -7,20 +7,21 @@ object Day18 {
     private const val INSTRUCTION_REGEX = "^(.) (\\d+) \\(#(.*)\\)"
 
     private enum class Direction(val coordinates: Coordinates) {
-        UP(Coordinates(x = 0, y = -1)), DOWN(Coordinates(x = 0, y = 1)), RIGHT(Coordinates(x = 1, y = 0)), LEFT(
-            Coordinates(x = -1, y = 0)
-        ),
+        UP(Coordinates(x = 0, y = -1)),
+        DOWN(Coordinates(x = 0, y = 1)),
+        RIGHT(Coordinates(x = 1, y = 0)),
+        LEFT(Coordinates(x = -1, y = 0)),
     }
 
     @JvmStatic
     fun main(args: Array<String>) {
         puzzle1()
-        //puzzle2()
+        puzzle2()
     }
 
     fun puzzle1() {
         readInput("day18Input") { lines ->
-            val instructions = lines.toList().map { it.parseInstruction() }.flatten()
+            val instructions = lines.toList().map { it.parseInstruction() }
             val start = Coordinates(x = 0, y = 0)
             val toDigList = instructions.execute(start).distinct()
             val minX = toDigList.minBy { it.x }.x
@@ -37,7 +38,7 @@ object Day18 {
         }
     }
 
-    private fun String.parseInstruction(): List<Instruction> {
+    private fun String.parseInstruction(): Instruction {
         val groups = Regex(INSTRUCTION_REGEX).findAll(this).toList()
 
         val directionValue = groups[0].groups[1]?.value ?: error("No valid direction")
@@ -49,16 +50,20 @@ object Day18 {
             "L" -> Direction.LEFT
             else -> error("No valid direction value")
         }
-        val steps = groups[0].groups[2]?.value?.toInt() ?: error("No valid steps")
+        val steps = groups[0].groups[2]?.value?.toLong() ?: error("No valid steps")
 
-        return Array(steps) { Instruction(direction) }.toList()
+        return Instruction(direction, steps)
     }
 
     private fun puzzle2() {
         readInput("day18Input") { lines ->
-            val instructions = lines.toList().map { it.parseInstruction2() }.flatten()
+            val input = lines.toList()
+            val instructions1 = input.map { it.parseInstruction() }
+            val instructions2 = input.map { it.parseInstruction2() }.mapIndexed { index, instruction ->
+                instruction.copy(steps = instruction.steps.div(instructions1[index].steps))
+            }
             val start = Coordinates(x = 0, y = 0)
-            val toDigList = instructions.execute(start).distinct()
+            val toDigList = instructions2.execute(start).distinct()
             val minX = toDigList.minBy { it.x }.x
             val minY = toDigList.minBy { it.y }.y
 
@@ -73,7 +78,24 @@ object Day18 {
         }
     }
 
-    private fun String.parseInstruction2(): List<Instruction> {
+    private fun calculateGCDForListOfNumbers(numbers: List<Long>): Long {
+        require(numbers.isNotEmpty()) { "List must not be empty" }
+        var result = numbers[0]
+        for (i in 1 until numbers.size) {
+            var num1 = result
+            var num2 = numbers[i]
+            while (num2 != 0L) {
+                val temp = num2
+                num2 = num1 % num2
+                num1 = temp
+            }
+            result = num1
+        }
+        return result
+    }
+
+
+    private fun String.parseInstruction2(): Instruction {
         val groups = Regex(INSTRUCTION_REGEX).findAll(this).toList()
 
         val hex = groups[0].groups[3]?.value ?: error("No valid hex")
@@ -86,15 +108,17 @@ object Day18 {
         }
         val steps = hex.dropLast(1).toLong(radix = 16)
 
-        return Array(steps.toInt()) { Instruction(direction) }.toList()
+        return Instruction(direction, steps)
     }
 
     private fun List<Instruction>.execute(start: Coordinates): List<Coordinates> {
         var current = start
 
-        return listOf(start) + map { instruction ->
-            current = current.add(instruction.direction)
-            current
+        return listOf(start) + flatMap { instruction ->
+            (0 until instruction.steps).map {
+                current = current.add(instruction.direction)
+                current
+            }
         }
     }
 
@@ -172,6 +196,6 @@ object Day18 {
         return Coordinates(x = x + direction.coordinates.x, y = y + direction.coordinates.y)
     }
 
-    private data class Instruction(val direction: Direction)
+    private data class Instruction(val direction: Direction, val steps: Long)
     private data class Coordinates(val x: Int, val y: Int)
 }
