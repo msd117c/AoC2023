@@ -15,29 +15,23 @@ object Day18 {
     @JvmStatic
     fun main(args: Array<String>) {
         puzzle1()
-        puzzle2()
+        //puzzle2()
     }
 
     fun puzzle1() {
         readInput("day18Input") { lines ->
             val instructions = lines.toList().map { it.parseInstruction() }.flatten()
-            val start = Node(Coordinates(x = 0, y = 0))
-            val toDigList = instructions.execute(start).distinctBy { it.coordinates }
-            val minX = toDigList.minBy { it.coordinates.x }.coordinates.x
-            val minY = toDigList.minBy { it.coordinates.y }.coordinates.y
+            val start = Coordinates(x = 0, y = 0)
+            val toDigList = instructions.execute(start).distinct()
+            val minX = toDigList.minBy { it.x }.x
+            val minY = toDigList.minBy { it.y }.y
 
             val offsetX = 0 - minX + 1
             val offsetY = 0 - minY + 1
 
-            val fixedList = toDigList.map {
-                it.copy(
-                    coordinates = it.coordinates.copy(
-                        x = it.coordinates.x + offsetX, y = it.coordinates.y + offsetY
-                    )
-                )
-            }
+            val fixedList = toDigList.map { it.copy(x = it.x + offsetX, y = it.y + offsetY) }
 
-            val innerArea = findInnerArea(fixedList.map { it.coordinates })
+            val innerArea = findInnerArea(fixedList)
             fixedList.drawMap(innerArea)
             println("Day 18 puzzle 1 result is: ${fixedList.size + innerArea.size}")
         }
@@ -63,23 +57,17 @@ object Day18 {
     private fun puzzle2() {
         readInput("day18Input") { lines ->
             val instructions = lines.toList().map { it.parseInstruction2() }.flatten()
-            val start = Node(Coordinates(x = 0, y = 0))
-            val toDigList = instructions.execute(start).distinctBy { it.coordinates }
-            val minX = toDigList.minBy { it.coordinates.x }.coordinates.x
-            val minY = toDigList.minBy { it.coordinates.y }.coordinates.y
+            val start = Coordinates(x = 0, y = 0)
+            val toDigList = instructions.execute(start).distinct()
+            val minX = toDigList.minBy { it.x }.x
+            val minY = toDigList.minBy { it.y }.y
 
             val offsetX = 0 - minX + 1
             val offsetY = 0 - minY + 1
 
-            val fixedList = toDigList.map {
-                it.copy(
-                    coordinates = it.coordinates.copy(
-                        x = it.coordinates.x + offsetX, y = it.coordinates.y + offsetY
-                    )
-                )
-            }
+            val fixedList = toDigList.map { it.copy(x = it.x + offsetX, y = it.y + offsetY) }
 
-            val innerArea = findInnerArea(fixedList.map { it.coordinates })
+            val innerArea = findInnerArea(fixedList)
             fixedList.drawMap(innerArea)
             println("Day 18 puzzle 2 result is: ${fixedList.size + innerArea.size}")
         }
@@ -101,7 +89,7 @@ object Day18 {
         return Array(steps.toInt()) { Instruction(direction) }.toList()
     }
 
-    private fun List<Instruction>.execute(start: Node): List<Node> {
+    private fun List<Instruction>.execute(start: Coordinates): List<Coordinates> {
         var current = start
 
         return listOf(start) + map { instruction ->
@@ -157,13 +145,13 @@ object Day18 {
         error("No inner point found!")
     }
 
-    private fun List<Node>.drawMap(area: List<Coordinates>) {
-        val maxX = maxBy { it.coordinates.x }.coordinates.x + 1
-        val minX = minBy { it.coordinates.x }.coordinates.x
+    private fun List<Coordinates>.drawMap(area: List<Coordinates>) {
+        val maxX = maxBy { it.x }.x + 1
+        val minX = minBy { it.x }.x
         val width = maxX - minX + 2
 
-        val maxY = maxBy { it.coordinates.y }.coordinates.y + 1
-        val minY = minBy { it.coordinates.y }.coordinates.y
+        val maxY = maxBy { it.y }.y + 1
+        val minY = minBy { it.y }.y
         val height = maxY - minY + 2
 
         val map = Array(height) { CharArray(width) { '.' } }
@@ -172,7 +160,7 @@ object Day18 {
             map.first().indices.forEach { x ->
                 when {
                     area.contains(Coordinates(x, y)) -> print('O')
-                    map { it.coordinates.x to it.coordinates.y }.contains(x to y) -> print('#')
+                    map { it.x to it.y }.contains(x to y) -> print('#')
                     else -> print('.')
                 }
             }
@@ -180,15 +168,10 @@ object Day18 {
         }
     }
 
-    private fun Node.add(direction: Direction): Node {
-        return Node(
-            Coordinates(
-                x = coordinates.x + direction.coordinates.x, y = coordinates.y + direction.coordinates.y
-            )
-        )
+    private fun Coordinates.add(direction: Direction): Coordinates {
+        return Coordinates(x = x + direction.coordinates.x, y = y + direction.coordinates.y)
     }
 
     private data class Instruction(val direction: Direction)
-    private data class Node(val coordinates: Coordinates)
     private data class Coordinates(val x: Int, val y: Int)
 }
