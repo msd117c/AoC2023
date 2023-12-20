@@ -17,6 +17,7 @@ object Day18 {
     @JvmStatic
     fun main(args: Array<String>) {
         puzzle1()
+        // Review
         puzzle2()
     }
 
@@ -49,8 +50,7 @@ object Day18 {
 
     private fun puzzle2() {
         readInput("day18Input") { lines ->
-            val input = lines.toList()
-            val instructions = input.map { it.parseColorDigPlan() }
+            val instructions = lines.toList().map { it.parseColorDigPlan() }
             val vertices = instructions.executeDigPlan()
 
             val capacity = lavaCapacity(vertices)
