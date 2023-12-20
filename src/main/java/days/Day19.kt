@@ -99,10 +99,11 @@ object Day19 {
                 workflows.getConditionsToAccepted().filterKeys { it.last().startsWith("A", ignoreCase = false) }
             val partRanges = acceptedPaths.mapValues { it.value.getPartRanges() }.map { it.value }
 
-            val combinations = partRanges.sumOf {
+            val totalCombinations = partRanges.sumOf {
                 it.x.count().toLong() * it.m.count().toLong() * it.s.count().toLong() * it.a.count().toLong()
             }
-            println("Day 19 puzzle 2 result is. $combinations")
+            val duplicateCombinations = partRanges.findDuplicateCombinationsAmount()
+            println("Day 19 puzzle 2 result is. ${totalCombinations - duplicateCombinations}")
         }
     }
 
@@ -227,6 +228,29 @@ object Day19 {
         }
 
         return PartRange(xRange, mRange, aRange, sRange)
+    }
+
+    private fun List<PartRange>.findDuplicateCombinationsAmount(): Long {
+        val duplicates = map { partRange ->
+            val xRange = partRange.x
+            val mRange = partRange.m
+            val aRange = partRange.a
+            val sRange = partRange.s
+
+            filter { anotherPartRange ->
+                val anotherXRange = anotherPartRange.x
+                val anotherMRange = anotherPartRange.m
+                val anotherARange = anotherPartRange.a
+                val anotherSRange = anotherPartRange.s
+
+                xRange.any { anotherXRange.contains(it) } &&
+                        mRange.any { anotherMRange.contains(it) } &&
+                        aRange.any { anotherARange.contains(it) } &&
+                        sRange.any { anotherSRange.contains(it) }
+            }.filter { it != partRange }
+        }
+
+        return 0L
     }
 
     private data class PartRange(val x: IntRange, val m: IntRange, val a: IntRange, val s: IntRange)
