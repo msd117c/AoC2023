@@ -98,10 +98,11 @@ object Day19 {
             val acceptedPaths =
                 workflows.getConditionsToAccepted().filterKeys { it.last().startsWith("A", ignoreCase = false) }
             val partRanges = acceptedPaths.mapValues { it.value.getPartRanges() }.map { it.value }
-            val combinations = partRanges.map {
-                (it.x.count().toLong() + 1) * (it.m.count().toLong() + 1) * (it.s.count().toLong() + 1) * (it.a.count().toLong() + 1)
-            }.sum()
-            combinations
+
+            val combinations = partRanges.sumOf {
+                it.x.count().toLong() * it.m.count().toLong() * it.s.count().toLong() * it.a.count().toLong()
+            }
+            println("Day 19 puzzle 2 result is. $combinations")
         }
     }
 
@@ -137,10 +138,7 @@ object Day19 {
             val (workflows, constraints) = queue.removeFirst()
             val current = workflows.last()
 
-            if (current.startsWith("A", ignoreCase = false)) {
-                paths[workflows] = constraints
-                continue
-            }
+            if (current.startsWith("A", ignoreCase = false)) continue
             if (current == "R") continue
 
             val neighbors = graph[current]
@@ -152,6 +150,7 @@ object Day19 {
 
                 val nextValue = if (nextId == "A") {
                     val lastAIndex = paths.filterKeys { it.last().startsWith("A", ignoreCase = false) }.count()
+                    paths[workflows + listOf("$nextId$lastAIndex")] = newConstraints
                     workflows + listOf("$nextId$lastAIndex") to newConstraints
                 } else {
                     workflows + listOf(nextId) to newConstraints
@@ -166,8 +165,8 @@ object Day19 {
 
     private fun Condition.getPaths(negativeConstraints: List<Constraint>): List<Path> {
         val positiveRange = when (operation) {
-            '>' -> IntRange(test, 4000)
-            '<' -> IntRange(1, test)
+            '>' -> IntRange(test + 1, 4000)
+            '<' -> IntRange(1, test - 1)
             else -> error("Bad positive range")
         }
         val positiveConstraint = Constraint(spec, positiveRange)
@@ -194,11 +193,7 @@ object Day19 {
             val maxX = xRanges.minOf { it.last }
             val minX = xRanges.maxOf { it.first }
 
-            if (maxX < minX) {
-                0..0
-            } else {
-                minX..maxX
-            }
+            minX..maxX
         }
 
         val mRanges = filter { it.spec == 'm' }.map { it.range }
@@ -208,11 +203,7 @@ object Day19 {
             val maxM = mRanges.minOf { it.last }
             val minM = mRanges.maxOf { it.first }
 
-            if (maxM < minM) {
-                0..0
-            } else {
-                minM..maxM
-            }
+            minM..maxM
         }
 
         val aRanges = filter { it.spec == 'a' }.map { it.range }
@@ -222,11 +213,7 @@ object Day19 {
             val maxA = aRanges.minOf { it.last }
             val minA = aRanges.maxOf { it.first }
 
-            if (maxA < minA) {
-                0..0
-            } else {
-                minA..maxA
-            }
+            minA..maxA
         }
 
         val sRanges = filter { it.spec == 's' }.map { it.range }
@@ -236,11 +223,7 @@ object Day19 {
             val maxS = sRanges.minOf { it.last }
             val minS = sRanges.maxOf { it.first }
 
-            if (maxS < minS) {
-                0..0
-            } else {
-                minS..maxS
-            }
+            minS..maxS
         }
 
         return PartRange(xRange, mRange, aRange, sRange)
