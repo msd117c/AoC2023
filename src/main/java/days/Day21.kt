@@ -19,6 +19,28 @@ object Day21 {
         }
     }
 
+    private fun List<CharArray>.dijkstra(steps: Int): Map<Int, List<Pair<Int, Int>>> {
+        var step = 0
+        val y = indexOfFirst { it.contains('S') }
+        val x = this[y].indexOfFirst { c -> c == 'S' }
+
+        val origin = x to y
+        val queue = mutableListOf(listOf(origin))
+        val distance = mutableMapOf(0 to listOf(origin))
+
+        while (queue.isNotEmpty()) {
+            val currentPositions = queue.removeFirst()
+
+            if (step == steps) return distance
+
+            val nextPositions = currentPositions.map { current -> findNeighbors(current) }.flatten().distinct()
+            distance[++step] = nextPositions
+            queue.add(nextPositions)
+        }
+
+        error("Something went wrong")
+    }
+
     private fun puzzle2() {
         readInput("day21Input") { lines ->
             val map = lines.toList().map { it.toCharArray() }
@@ -34,30 +56,6 @@ object Day21 {
             val result = ((n+1)*(n*1)) * oddFull + (n*n) * evenFull - (n+1) * oddCorners + n * evenCorners
             println("Day 21 puzzle 2 result is: $result")
         }
-    }
-
-    private fun List<CharArray>.dijkstra(steps: Int): Map<Int, List<Pair<Int, Int>>> {
-        var step = 0
-        val y = indexOfFirst { it.contains('S') }
-        val x = this[y].indexOfFirst { c -> c == 'S' }
-
-        val origin = x to y
-        val queue = mutableListOf(listOf(origin))
-        val distance = mutableMapOf(0 to listOf(origin))
-
-        while (queue.isNotEmpty()) {
-            val currentPositions = queue.removeFirst()
-
-            if (step == steps) return distance
-
-            step++
-
-            val nextPositions = currentPositions.map { current -> findNeighbors(current) }.flatten().distinct()
-            distance[step] = nextPositions
-            queue.add(nextPositions)
-        }
-
-        error("Something went wrong")
     }
 
     private fun List<CharArray>.dijkstra2(steps: Int): Map<Pair<Int, Int>, Int> {
